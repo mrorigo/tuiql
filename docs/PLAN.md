@@ -57,5 +57,6 @@ This document outlines the strategy and high-level plan for the TUIQL project. I
 - Create a minimal viable version (MVP) to demonstrate key functionalities.
 - Document conventional commit messages and development guidelines.
 - [Iteration 1] Add CLI stub and SQLite connection stub.
+- [Iteration 2] Implement REPL stub, SQL execution stub, plan visualization stub, configuration loader, diff, and schema map stubs.
 
 This plan will evolve as the project grows. Continuous improvements and adaptations will be made to meet the project's objectives and timelines.
