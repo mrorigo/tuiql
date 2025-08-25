@@ -100,7 +100,110 @@ impl ResultsGrid {
             output.push('\n');
         }
         // Render rows
-        for row in self.viewport.visible_rows(&self.rows) {
+        // Render rows with sticky headers
+        for (i, row) in self.viewport.visible_rows(&self.rows).iter().enumerate() {
+            if i == 0 && !self.headers.is_empty() {
+                output.push_str(&self.headers.join(" | "));
+                output.push('\n');
+                let underline: Vec<String> =
+                    self.headers.iter().map(|h| "-".repeat(h.len())).collect();
+                output.push_str(&underline.join("-|-"));
+                output.push('\n');
+                /// Exports the grid data to a specified format.
+                /// Supported formats: CSV, JSON, Markdown.
+                pub fn export(&self, format: &str) -> Result<String, String> {
+                    match format.to_lowercase().as_str() {
+                        "csv" => self.export_to_csv(),
+                        "json" => self.export_to_json(),
+                        "markdown" => self.export_to_markdown(),
+                        _ => Err("Unsupported export format".to_string()),
+                    }
+                }
+
+                fn export_to_csv(&self) -> Result<String, String> {
+                    let mut output = String::new();
+                    if !self.headers.is_empty() {
+                        output.push_str(&self.headers.join(","));
+                        output.push('\n');
+                    }
+                    for row in &self.rows {
+                        let row_content: Vec<String> =
+                            row.cells.iter().map(|cell| cell.content.clone()).collect();
+                        output.push_str(&row_content.join(","));
+                        output.push('\n');
+                    }
+                    Ok(output)
+                }
+
+                fn export_to_json(&self) -> Result<String, String> {
+                    let mut rows = Vec::new();
+                    for row in &self.rows {
+                        let mut row_map = std::collections::HashMap::new();
+                        for (i, cell) in row.cells.iter().enumerate() {
+                            if let Some(header) = self.headers.get(i) {
+                                row_map.insert(header.clone(), cell.content.clone());
+                                #[test]
+                                fn test_export_to_csv() {
+                                    let mut grid = ResultsGrid::new();
+                                    grid.set_headers(vec!["ID".to_string(), "Name".to_string()]);
+                                    grid.add_row(vec!["1".to_string(), "Alice".to_string()]);
+                                    grid.add_row(vec!["2".to_string(), "Bob".to_string()]);
+                                    let csv = grid.export("csv").unwrap();
+                                    assert!(csv.contains("ID,Name"));
+                                    assert!(csv.contains("1,Alice"));
+                                    assert!(csv.contains("2,Bob"));
+                                }
+
+                                #[test]
+                                fn test_export_to_json() {
+                                    let mut grid = ResultsGrid::new();
+                                    grid.set_headers(vec!["ID".to_string(), "Name".to_string()]);
+                                    grid.add_row(vec!["1".to_string(), "Alice".to_string()]);
+                                    grid.add_row(vec!["2".to_string(), "Bob".to_string()]);
+                                    let json = grid.export("json").unwrap();
+                                    assert!(json.contains(r#""ID":"1""#));
+                                    assert!(json.contains(r#""Name":"Alice""#));
+                                    assert!(json.contains(r#""ID":"2""#));
+                                    assert!(json.contains(r#""Name":"Bob""#));
+                                }
+
+                                #[test]
+                                fn test_export_to_markdown() {
+                                    let mut grid = ResultsGrid::new();
+                                    grid.set_headers(vec!["ID".to_string(), "Name".to_string()]);
+                                    grid.add_row(vec!["1".to_string(), "Alice".to_string()]);
+                                    grid.add_row(vec!["2".to_string(), "Bob".to_string()]);
+                                    let markdown = grid.export("markdown").unwrap();
+                                    assert!(markdown.contains("ID | Name"));
+                                    assert!(markdown.contains("1 | Alice"));
+                                    assert!(markdown.contains("2 | Bob"));
+                                }
+                            }
+                        }
+                        rows.push(row_map);
+                    }
+                    serde_json::to_string(&rows).map_err(|e| e.to_string())
+                }
+
+                fn export_to_markdown(&self) -> Result<String, String> {
+                    let mut output = String::new();
+                    if !self.headers.is_empty() {
+                        output.push_str(&self.headers.join(" | "));
+                        output.push('\n');
+                        let underline: Vec<String> =
+                            self.headers.iter().map(|h| "-".repeat(h.len())).collect();
+                        output.push_str(&underline.join(" | "));
+                        output.push('\n');
+                    }
+                    for row in &self.rows {
+                        let row_content: Vec<String> =
+                            row.cells.iter().map(|cell| cell.content.clone()).collect();
+                        output.push_str(&row_content.join(" | "));
+                        output.push('\n');
+                    }
+                    Ok(output)
+                }
+            }
             let row_content: Vec<String> =
                 row.cells.iter().map(|cell| cell.content.clone()).collect();
             output.push_str(&row_content.join(" | "));

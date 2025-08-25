@@ -27,7 +27,7 @@ This document tracks the current status of the TUIQL project, including complete
 - **Plan Visualizer Enhancements:** ✅ Completed
 - **Record Inspector Enhancements:** ✅ Completed
 - **Schema Map Enhancements:** ✅ Completed: Added grouping by schema, highlighting relationships, and advanced visualization features.
-- **Results Grid Enhancements:** ✅ Completed
+- **Results Grid Enhancements:** ✅ Completed: Added virtualized scrolling, sticky headers, and export functionality (CSV, JSON, Markdown).
 - **Command Palette Stub:** ✅ Completed
 
 ---
@@ -41,7 +41,7 @@ This document tracks the current status of the TUIQL project, including complete
 
 - **Feature Enhancements:**
   - Adding advanced linting and formatting capabilities to the query editor. [COMPLETED]
-  - Enhancing the results grid with virtualized scrolling and export options.
+  - Enhancing the results grid with virtualized scrolling and export options. [COMPLETED]
 
 ---
 
