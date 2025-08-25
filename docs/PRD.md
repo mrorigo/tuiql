@@ -83,23 +83,23 @@ A blazing‑fast, terminal‑native, keyboard‑centric SQLite client that makes
 
 3. **Schema Map (ER‑like graph)**
 
-* Auto‑layout graph from FK metadata; focus+follow edges; collapse unrelated clusters.
+* Auto‑layout graph from FK metadata; focus+follow edges; collapse unrelated clusters; grouping by schema and highlighting circular references.
 * Node detail popover (columns, types, constraints, indexes).
 
 4. **Query Editor**
 
 * Multiline edit, syntax highlight, bracket/quote balance, format (`:Fmt`).
 * Completions (tables/columns/functions/pragmas), signature help, snippets.
-* Lint: dangerous ops alert (implicit full table UPDATE/DELETE without WHERE), `BEGIN…COMMIT` guard.
+* Lint: dangerous ops alert (implicit full table UPDATE/DELETE without WHERE), `BEGIN…COMMIT` guard, implicit JOIN detection.
 
 5. **Results Grid**
 
 * Virtualized table; sticky header; sort client‑side; type‑aware cells (NULL, BLOB, JSON).
-* Inline JSON tree, text wrap, copy cell/row, export (CSV/Parquet/JSON/Markdown).
+* Inline JSON tree, text wrap, copy cell/row, export (CSV/JSON/Markdown).
 
 6. **Record Inspector**
 
-* Focus a row → vertical card view; edit with type validation; preview UPDATE/INSERT.
+* Focus a row → vertical card view; edit with type validation; preview UPDATE/INSERT; optimized for large records.
 
 7. **Plan Visualizer**
 
