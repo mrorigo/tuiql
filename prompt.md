@@ -1,0 +1,1 @@
+Perform one iteration on the plan, and do your best to progress the project and fulfill the PRD. Keep the docs/PLAN.md up to date, and follow the Agent Instructions carefully; write tests and commit changes after each iteration.
