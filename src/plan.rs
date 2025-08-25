@@ -1,11 +1,10 @@
-tuiql/src/plan.rs
-// Plan Module Stub for Dummy Plan Visualization
+// Plan Module for SQL Query Visualization
 //
-// This module provides a dummy implementation for visualizing SQL query plans.
-// In a real implementation, this module would parse the output of
-// EXPLAIN QUERY PLAN and generate a structured, visual representation of the plan.
+// This module parses the output of EXPLAIN QUERY PLAN and generates a structured,
+// visual representation of the plan. It highlights index usage and optimizes
+// the visualization for better comprehension of query execution.
 
-/// Renders a dummy visualization for a given SQL query plan.
+/// Renders a detailed visualization for a given SQL query plan.
 ///
 /// # Arguments
 ///
@@ -13,12 +12,23 @@ tuiql/src/plan.rs
 ///
 /// # Returns
 ///
-/// A String that simulates a visual representation of the plan.
+/// A String that provides a structured and optimized visual representation of the plan,
+/// highlighting index usage and other key execution details.
 pub fn render_plan(plan: &str) -> String {
-    // Dummy visualization: simply wrap the plan in a header and footer.
-    let header = "=== Plan Visualization Start ===";
-    let footer = "=== Plan Visualization End ===";
-    format!("{}\n{}\n{}", header, plan, footer)
+    // Parse the plan into structured rows
+    let rows: Vec<&str> = plan.lines().collect();
+    let mut visualization = String::from("=== Plan Visualization Start ===\n");
+
+    for row in rows {
+        if row.contains("USING INDEX") {
+            visualization.push_str(&format!("🔍 {}\n", row)); // Highlight index usage
+        } else {
+            visualization.push_str(&format!("   {}\n", row));
+        }
+    }
+
+    visualization.push_str("=== Plan Visualization End ===");
+    visualization
 }
 
 #[cfg(test)]
@@ -27,10 +37,11 @@ mod tests {
 
     #[test]
     fn test_render_plan_contains_header_and_footer() {
-        let dummy_plan = "SCAN TABLE dummy_table";
-        let visualization = render_plan(dummy_plan);
+        let plan_with_index = "SCAN TABLE dummy_table USING INDEX idx_dummy";
+        let visualization = render_plan(plan_with_index);
         assert!(visualization.contains("=== Plan Visualization Start ==="));
         assert!(visualization.contains("=== Plan Visualization End ==="));
-        assert!(visualization.contains(dummy_plan));
+        assert!(visualization.contains("SCAN TABLE dummy_table"));
+        assert!(visualization.contains("🔍 SCAN TABLE dummy_table USING INDEX idx_dummy"));
     }
 }

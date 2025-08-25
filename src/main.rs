@@ -3,8 +3,8 @@ use tracing_subscriber;
 
 mod command_palette;
 mod db;
+mod plan;
 mod repl;
-mod results_grid;
 mod schema_map;
 
 fn main() {
