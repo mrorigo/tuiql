@@ -22,6 +22,7 @@ This document tracks the current status of the TUIQL project, including complete
 - **Configuration Loader:** ✅ Completed
 - **Diff Stub:** ✅ Completed
 - **Schema Map Stub:** ✅ Completed
+- **Query Editor Enhancements:** ✅ Completed
 - **Schema Navigator Implementation:** ✅ Completed
 - **Plan Visualizer Enhancements:** ✅ Completed
 - **Record Inspector Stub:** ✅ Completed
@@ -57,6 +58,10 @@ This document tracks the current status of the TUIQL project, including complete
    - Add support for inline JSON tree views and type-aware cell rendering.
    - Implement virtualized scrolling for large datasets.
    - Enhance rendering logic to display rows within the viewport.
+
+4. **Query Editor:**
+   - Add linting for dangerous SQL operations.
+   - Implement query formatting for better readability.
 
 4. **Plan Visualizer:**
    - Highlight index usage and optimize the cost/loop visualization.

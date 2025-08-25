@@ -4,6 +4,7 @@ use tracing_subscriber;
 mod command_palette;
 mod db;
 mod plan;
+mod query_editor;
 mod repl;
 mod schema_map;
 mod schema_navigator;
