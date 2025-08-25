@@ -16,6 +16,7 @@ pub enum Command {
     Hist,
     Snip(String),
     Diff { db_a: String, db_b: String },
+    Help,
     Unknown(String),
 }
 
@@ -106,6 +107,7 @@ pub fn parse_command(input: &str) -> Command {
                 Command::Unknown(input.to_string())
             }
         }
+        "help" => Command::Help,
         _ => Command::Unknown(input.to_string()),
     }
 }
@@ -115,7 +117,7 @@ pub fn parse_command(input: &str) -> Command {
 pub fn run_repl() {
     use crate::command_palette::CommandPalette;
 
-    println!("tuiql REPL - Type :quit to exit.");
+    println!("Welcome to the tuiql REPL! Type :quit to exit.");
     let mut input = String::new();
     let command_palette = CommandPalette::new();
 
@@ -126,7 +128,10 @@ pub fn run_repl() {
         io::stdin()
             .read_line(&mut input)
             .expect("Failed to read input");
-        let trimmed = input.trim();
+        let trimmed = input.trim().to_string();
+        if trimmed.is_empty() {
+            continue;
+        }
 
         if trimmed == ":quit" {
             break;
@@ -135,15 +140,34 @@ pub fn run_repl() {
         if trimmed.starts_with(':') {
             let suggestions = command_palette.filter_commands(&trimmed[1..]);
             if !suggestions.is_empty() {
-                println!("Suggestions:");
+                println!("Did you mean:");
                 for suggestion in suggestions {
-                    println!(":{}", suggestion.name);
+                    println!("  :{} - {}", suggestion.name, suggestion.description);
                 }
             }
         }
 
-        let command = parse_command(trimmed);
-        println!("Parsed command: {:?}", command);
+        let command = parse_command(&trimmed);
+        match command {
+            Command::Help => {
+                println!("Available commands:");
+                println!("  :help - List all available commands and their descriptions");
+                println!("  :open <path> - Open a database");
+                println!("  :attach <name> <path> - Attach a database");
+                println!("  :ro - Toggle read-only mode");
+                println!("  :rw - Toggle read-write mode");
+                println!("  :pragma <name> [val] - View or set a pragma");
+                println!("  :plan - Visualize the query plan");
+                println!("  :fmt - Format the current query buffer");
+                println!("  :export <format> - Export current result set");
+                println!("  :find <text> - Search for text in the database schema or queries");
+                println!("  :erd [table] - Show ER-diagram for the schema");
+                println!("  :hist - Show command/query history");
+                println!("  :snip <action> - Manage query snippets");
+                println!("  :diff <dbA> <dbB> - Perform a schema diff between databases");
+            }
+            _ => println!("You entered: {:?}", command),
+        }
     }
 }
 

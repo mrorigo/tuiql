@@ -64,9 +64,14 @@ This document outlines the strategy and high-level plan for the TUIQL project. I
 - [Iteration 5] Enhance Query Editor with advanced linting for dangerous SQL operations and improved query formatting. [COMPLETED]
 - [Iteration 6] Implement REPL command auto-completion to improve usability and user experience. [COMPLETED]
 - [Iteration 6] Enhance Results Grid with virtualized scrolling, sticky headers, and export options. [COMPLETED]
-- [Iteration 7] Add a help feature to provide users with a list of available commands and their descriptions.
-- [Iteration 8] Implement configuration file loader to allow users to customize keybindings and default settings.
-- [Iteration 9] Add a configuration file loader to allow users to customize keybindings and default settings.
-- [Iteration 5] Enhance schema map with grouping, highlighting relationships, and advanced visualization. [COMPLETED]
+- [Iteration 7] Verify and enhance the Query Editor with advanced linting, formatting, and execution capabilities.
+- [Iteration 8] Verify and enhance the Results Grid with virtualized scrolling, sticky headers, and export options.
+- [Iteration 9] Validate and complete the Record Inspector for editing and viewing records.
+- [Iteration 10] Verify and implement the Plan Visualizer for rendering `EXPLAIN QUERY PLAN`.
+
+- [Iteration 11] Confirm and enhance the Schema Map with grouping, highlighting relationships, and advanced visualization.
+- [Iteration 12] Implement Extensions & Helpers for JSON1 and FTS5 functionality.
+- [Iteration 13] Add History, Snippets & Macros for query history, pinned queries, and macros.
+- [Iteration 14] Verify and implement Keyboard Shortcuts for Vim/Emacs modes and other actions.
 
 This plan will evolve as the project grows. Continuous improvements and adaptations will be made to meet the project's objectives and timelines.

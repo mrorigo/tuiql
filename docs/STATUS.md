@@ -27,9 +27,9 @@ This document tracks the current status of the TUIQL project, including complete
 - **Plan Visualizer Enhancements:** ✅ Completed
 - **Record Inspector Enhancements:** ✅ Completed
 - **Schema Map Enhancements:** ✅ Completed: Added grouping by schema, highlighting relationships, and advanced visualization features.
-- **Results Grid Enhancements:** ✅ Completed: Added virtualized scrolling, sticky headers, and export functionality (CSV, JSON, Markdown).
-- **Command Palette Stub:** ✅ Completed
-- **Help Command:** ✅ Completed
+- **Results Grid Enhancements:** 🚧 In Progress: Virtualized scrolling, sticky headers, and export functionality need verification and testing.
+- **Command Palette Stub:** ✅ Completed: Commands like `:open`, `:attach`, `:help`, etc., are functional with auto-completion in the REPL.
+- **Help Command:** ✅ Completed: Displays a list of available commands and their descriptions.
 - **REPL Command Auto-Completion:** ✅ Completed
 
 ---
@@ -42,10 +42,10 @@ This document tracks the current status of the TUIQL project, including complete
   - Implementing golden tests for TUI components.
 
 - **Feature Enhancements:**
-  - Adding advanced linting and formatting capabilities to the query editor. [COMPLETED]
-  - Enhancing the results grid with virtualized scrolling and export options. [COMPLETED]
-  - Implementing the help command to list all available commands and their descriptions. [COMPLETED]
-  - Adding command auto-completion to the REPL for improved usability. [COMPLETED]
+  - Adding advanced linting and formatting capabilities to the query editor. 🚧 In Progress: Needs verification for execution and error handling.
+  - Enhancing the results grid with virtualized scrolling and export options. 🚧 In Progress: Requires testing for large datasets.
+  - Implementing the help command to list all available commands and their descriptions. ✅ Completed.
+  - Adding command auto-completion to the REPL for improved usability. ✅ Completed.
 
 ---
 
