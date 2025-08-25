@@ -26,7 +26,7 @@ This document tracks the current status of the TUIQL project, including complete
 - **Schema Navigator Implementation:** ✅ Completed
 - **Plan Visualizer Enhancements:** ✅ Completed
 - **Record Inspector Enhancements:** ✅ Completed
-- **Schema Map Enhancements:** ✅ Completed
+- **Schema Map Enhancements:** ✅ Completed: Added grouping by schema, highlighting relationships, and advanced visualization features.
 - **Results Grid Enhancements:** ✅ Completed
 - **Command Palette Stub:** ✅ Completed
 
@@ -40,7 +40,6 @@ This document tracks the current status of the TUIQL project, including complete
   - Implementing golden tests for TUI components.
 
 - **Feature Enhancements:**
-  - Improving the schema map for better visualization.
   - Adding advanced linting and formatting capabilities to the query editor.
   - Enhancing the results grid with virtualized scrolling and export options.
 

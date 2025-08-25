@@ -56,17 +56,48 @@ pub fn generate_schema_map(schema_data: &str) -> SchemaMap {
 /// This implementation converts the schema map into a string diagram for visualization.
 pub fn render_schema_map(map: &SchemaMap) -> String {
     let mut diagram = String::new();
+    let mut grouped_nodes: std::collections::HashMap<&str, Vec<&SchemaNode>> =
+        std::collections::HashMap::new();
+
+    // Group nodes by schema (assuming table names are prefixed with schema, e.g., "schema.table")
     for node in &map.nodes {
-        diagram.push_str(&format!("Table: {}\n", node.table_name));
-        if !node.foreign_keys.is_empty() {
-            diagram.push_str("  Foreign Keys:\n");
-            for fk in &node.foreign_keys {
-                diagram.push_str(&format!("    -> {}\n", fk));
+        let parts: Vec<&str> = node.table_name.split('.').collect();
+        let schema = if parts.len() > 1 { parts[0] } else { "default" };
+        grouped_nodes.entry(schema).or_default().push(node);
+    }
+
+    for (schema, nodes) in grouped_nodes {
+        diagram.push_str(&format!("Schema: {}\n", schema));
+        for node in nodes {
+            diagram.push_str(&format!("  Table: {}\n", node.table_name));
+            if !node.foreign_keys.is_empty() {
+                diagram.push_str("    Foreign Keys:\n");
+                for fk in &node.foreign_keys {
+                    diagram.push_str(&format!("      -> {}\n", fk));
+                }
+            } else {
+                diagram.push_str("    No Foreign Keys\n");
             }
-        } else {
-            diagram.push_str("  No Foreign Keys\n");
         }
     }
+
+    // Highlight specific relationships (e.g., circular references)
+    diagram.push_str("\nHighlights:\n");
+    for node in &map.nodes {
+        for fk in &node.foreign_keys {
+            if map
+                .nodes
+                .iter()
+                .any(|n| n.table_name == *fk && n.foreign_keys.contains(&node.table_name))
+            {
+                diagram.push_str(&format!(
+                    "  Circular reference: {} <-> {}\n",
+                    node.table_name, fk
+                ));
+            }
+        }
+    }
+
     diagram
 }
 
