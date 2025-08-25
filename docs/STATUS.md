@@ -30,6 +30,7 @@ This document tracks the current status of the TUIQL project, including complete
 - **Results Grid Enhancements:** ✅ Completed: Added virtualized scrolling, sticky headers, and export functionality (CSV, JSON, Markdown).
 - **Command Palette Stub:** ✅ Completed
 - **Help Command:** ✅ Completed
+- **REPL Command Auto-Completion:** ✅ Completed
 
 ---
 
@@ -44,6 +45,7 @@ This document tracks the current status of the TUIQL project, including complete
   - Adding advanced linting and formatting capabilities to the query editor. [COMPLETED]
   - Enhancing the results grid with virtualized scrolling and export options. [COMPLETED]
   - Implementing the help command to list all available commands and their descriptions. [COMPLETED]
+  - Adding command auto-completion to the REPL for improved usability. [COMPLETED]
 
 ---
 

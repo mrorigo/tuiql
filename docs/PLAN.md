@@ -62,9 +62,10 @@ This document outlines the strategy and high-level plan for the TUIQL project. I
 - [Iteration 4] Add command palette stub for quick command execution and integrate tests. [COMPLETED]
 - [Iteration 5] Add a help feature to provide users with a list of available commands and their descriptions. [COMPLETED]
 - [Iteration 5] Enhance Query Editor with advanced linting for dangerous SQL operations and improved query formatting. [COMPLETED]
+- [Iteration 6] Implement REPL command auto-completion to improve usability and user experience. [COMPLETED]
 - [Iteration 6] Enhance Results Grid with virtualized scrolling, sticky headers, and export options. [COMPLETED]
 - [Iteration 7] Add a help feature to provide users with a list of available commands and their descriptions.
-- [Iteration 8] Implement command auto-completion in the REPL for better usability.
+- [Iteration 8] Implement configuration file loader to allow users to customize keybindings and default settings.
 - [Iteration 9] Add a configuration file loader to allow users to customize keybindings and default settings.
 - [Iteration 5] Enhance schema map with grouping, highlighting relationships, and advanced visualization. [COMPLETED]
 

@@ -113,8 +113,12 @@ pub fn parse_command(input: &str) -> Command {
 /// Runs a simple REPL shell that reads commands from standard input,
 /// parses them, and prints the parsed command. Type ":quit" to exit.
 pub fn run_repl() {
+    use crate::command_palette::CommandPalette;
+
     println!("tuiql REPL - Type :quit to exit.");
     let mut input = String::new();
+    let command_palette = CommandPalette::new();
+
     loop {
         print!("> ");
         io::stdout().flush().expect("Failed to flush stdout");
@@ -123,9 +127,21 @@ pub fn run_repl() {
             .read_line(&mut input)
             .expect("Failed to read input");
         let trimmed = input.trim();
+
         if trimmed == ":quit" {
             break;
         }
+
+        if trimmed.starts_with(':') {
+            let suggestions = command_palette.filter_commands(&trimmed[1..]);
+            if !suggestions.is_empty() {
+                println!("Suggestions:");
+                for suggestion in suggestions {
+                    println!(":{}", suggestion.name);
+                }
+            }
+        }
+
         let command = parse_command(trimmed);
         println!("Parsed command: {:?}", command);
     }
