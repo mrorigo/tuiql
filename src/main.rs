@@ -2,6 +2,7 @@ use tracing::info;
 use tracing_subscriber;
 
 mod db;
+mod repl;
 
 fn main() {
     // Initialize the logging system using tracing subscriber
@@ -23,6 +24,7 @@ fn main() {
         }
     } else {
         println!("No database provided. Running in interactive mode.");
+        repl::run_repl();
     }
 }
 
