@@ -6,6 +6,7 @@ mod db;
 mod plan;
 mod repl;
 mod schema_map;
+mod schema_navigator;
 
 fn main() {
     // Initialize the logging system using tracing subscriber

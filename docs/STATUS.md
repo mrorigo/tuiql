@@ -22,6 +22,7 @@ This document tracks the current status of the TUIQL project, including complete
 - **Configuration Loader:** ✅ Completed
 - **Diff Stub:** ✅ Completed
 - **Schema Map Stub:** ✅ Completed
+- **Schema Navigator Implementation:** ✅ Completed
 - **Plan Visualizer Enhancements:** ✅ Completed
 - **Record Inspector Stub:** ✅ Completed
 - **Schema Map Enhancements:** ✅ Completed
@@ -47,7 +48,7 @@ This document tracks the current status of the TUIQL project, including complete
 ## Upcoming Priorities
 
 1. **Schema Navigator:**
-   - Implement a tree-based schema navigator with badges for row counts, PK/FK indicators, and index details.
+   - Implement a tree-based schema navigator with badges for row counts, PK/FK indicators, and index details. ✅ Completed
 2. **Schema Map:**
    - Parse real schema data to generate a map.
    - Visualize relationships between tables using ASCII diagrams.
