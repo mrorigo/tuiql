@@ -74,6 +74,10 @@ impl CommandPalette {
                 name: "diff".to_string(),
                 description: "Perform a schema diff between databases".to_string(),
             },
+            Command {
+                name: "help".to_string(),
+                description: "List all available commands and their descriptions".to_string(),
+            },
         ];
         CommandPalette { commands }
     }
@@ -95,6 +99,17 @@ impl CommandPalette {
     /// In this stub implementation, execution simply returns a string message.
     /// Returns an error if the command is not found.
     pub fn execute_command(&self, name: &str) -> Result<String, String> {
+        if name == "help" {
+            let help_text: String = self
+                .commands
+                .iter()
+                .map(|cmd| format!("{} - {}", cmd.name, cmd.description))
+                .collect::<Vec<_>>()
+                .join("\n");
+            let output = format!("Available commands:\n{}", help_text);
+            println!("Debug: Help command output:\n{}", output); // Debug logging
+            return Ok(output);
+        }
         for cmd in &self.commands {
             if cmd.name == name {
                 return Ok(format!(
@@ -117,6 +132,18 @@ mod tests {
         let filtered = palette.filter_commands("open");
         assert_eq!(filtered.len(), 1);
         assert_eq!(filtered[0].name, "open");
+    }
+
+    #[test]
+    fn test_help_command() {
+        let palette = CommandPalette::new();
+        let result = palette.execute_command("help");
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        println!("Debug: Actual help command output:\n{}", output); // Print actual output for debugging
+        assert!(output.contains("Available commands:"));
+        assert!(output.contains("open - Open a database"));
+        assert!(output.contains("help - List all available commands and their descriptions"));
     }
 
     #[test]

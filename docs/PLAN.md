@@ -60,6 +60,7 @@ This document outlines the strategy and high-level plan for the TUIQL project. I
 - [Iteration 2] Implement REPL stub, SQL execution stub, plan visualization stub, configuration loader, diff, and schema map stubs. [COMPLETED: Basic schema map rendering implemented]
 - [Iteration 3] Add record inspector stub for view and edit records. [COMPLETED: Validation logic enhanced, tests written and passed]
 - [Iteration 4] Add command palette stub for quick command execution and integrate tests. [COMPLETED]
+- [Iteration 5] Add a help feature to provide users with a list of available commands and their descriptions. [COMPLETED]
 - [Iteration 5] Enhance Query Editor with advanced linting for dangerous SQL operations and improved query formatting. [COMPLETED]
 - [Iteration 6] Enhance Results Grid with virtualized scrolling, sticky headers, and export options. [COMPLETED]
 - [Iteration 7] Add a help feature to provide users with a list of available commands and their descriptions.
