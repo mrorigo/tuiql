@@ -4,6 +4,7 @@ use tracing_subscriber;
 mod command_palette;
 mod db;
 mod repl;
+mod schema_map;
 
 fn main() {
     // Initialize the logging system using tracing subscriber
