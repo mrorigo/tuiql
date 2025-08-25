@@ -8,12 +8,44 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct Cell {
     pub content: String,
+    pub cell_type: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct Viewport {
+    pub start: usize,
+    pub end: usize,
+}
+
+impl Viewport {
+    pub fn new(start: usize, end: usize) -> Self {
+        Viewport { start, end }
+    }
+
+    pub fn visible_rows<'a>(&self, rows: &'a [Row]) -> &'a [Row] {
+        let start = self.start.min(rows.len());
+        let end = self.end.min(rows.len());
+        &rows[start..end]
+    }
+
+    pub fn scroll_down(&mut self) {
+        self.start += 1;
+        self.end += 1;
+    }
+
+    pub fn scroll_up(&mut self) {
+        if self.start > 0 {
+            self.start -= 1;
+            self.end -= 1;
+        }
+    }
 }
 
 /// Represents a row of cells in the grid.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Row {
     pub cells: Vec<Cell>,
+    pub row_index: usize,
 }
 
 /// Represents the entire grid structure.
@@ -21,6 +53,7 @@ pub struct Row {
 pub struct ResultsGrid {
     pub headers: Vec<String>,
     pub rows: Vec<Row>,
+    pub viewport: Viewport,
 }
 
 impl ResultsGrid {
@@ -29,6 +62,7 @@ impl ResultsGrid {
         ResultsGrid {
             headers: Vec::new(),
             rows: Vec::new(),
+            viewport: Viewport::new(0, 10), // Default viewport with 10 rows
         }
     }
 
@@ -39,8 +73,17 @@ impl ResultsGrid {
 
     /// Adds a row to the grid. Each row is represented as a vector of strings.
     pub fn add_row(&mut self, row: Vec<String>) {
-        let cells = row.into_iter().map(|s| Cell { content: s }).collect();
-        self.rows.push(Row { cells });
+        let cells = row
+            .into_iter()
+            .map(|s| Cell {
+                content: s,
+                cell_type: "text".to_string(),
+            })
+            .collect();
+        self.rows.push(Row {
+            cells,
+            row_index: self.rows.len(),
+        });
     }
 
     /// Renders the grid as a simple string with headers and rows.
@@ -57,7 +100,7 @@ impl ResultsGrid {
             output.push('\n');
         }
         // Render rows
-        for row in &self.rows {
+        for row in self.viewport.visible_rows(&self.rows) {
             let row_content: Vec<String> =
                 row.cells.iter().map(|cell| cell.content.clone()).collect();
             output.push_str(&row_content.join(" | "));
@@ -70,6 +113,20 @@ impl ResultsGrid {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_virtualized_scrolling() {
+        let mut grid = ResultsGrid::new();
+        grid.set_headers(vec!["ID".to_string(), "Name".to_string()]);
+        for i in 0..50 {
+            grid.add_row(vec![i.to_string(), format!("Name {}", i)]);
+        }
+        grid.viewport.scroll_down();
+        let rendered = grid.render();
+        assert!(rendered.contains("10 | Name 10"));
+        assert!(rendered.contains("10 | Name 10"));
+        assert!(!rendered.contains("0 | Name 0"));
+    }
 
     #[test]
     fn test_empty_grid_render() {
@@ -100,7 +157,7 @@ mod tests {
         let rendered = grid.render();
         // Check that the output contains the headers and row data.
         assert!(rendered.contains("ID | Name | Email"));
-        assert!(rendered.contains("Alice | alice@example.com"));
-        assert!(rendered.contains("Bob | bob@example.com"));
+        assert!(rendered.contains("1 | Alice | alice@example.com"));
+        assert!(rendered.contains("2 | Bob | bob@example.com"));
     }
 }

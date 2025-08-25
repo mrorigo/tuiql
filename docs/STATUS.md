@@ -24,6 +24,7 @@ This document tracks the current status of the TUIQL project, including complete
 - **Schema Map Stub:** ✅ Completed
 - **Record Inspector Stub:** ✅ Completed
 - **Schema Map Enhancements:** ✅ Completed
+- **Results Grid Enhancements:** ✅ Completed
 - **Command Palette Stub:** ✅ Completed
 
 ---
@@ -50,8 +51,10 @@ This document tracks the current status of the TUIQL project, including complete
    - Parse real schema data to generate a map.
    - Visualize relationships between tables using ASCII diagrams.
 
-2. **Results Grid:**
+3. **Results Grid:**
    - Add support for inline JSON tree views and type-aware cell rendering.
+   - Implement virtualized scrolling for large datasets.
+   - Enhance rendering logic to display rows within the viewport.
 
 3. **Plan Visualizer:**
    - Highlight index usage and optimize the cost/loop visualization.
