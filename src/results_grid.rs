@@ -178,6 +178,33 @@ impl ResultsGrid {
                                     assert!(markdown.contains("1 | Alice"));
                                     assert!(markdown.contains("2 | Bob"));
                                 }
+                                #[test]
+                                fn benchmark_large_dataset_rendering() {
+                                    let mut grid = ResultsGrid::new();
+                                    grid.set_headers(vec![
+                                        "ID".to_string(),
+                                        "Name".to_string(),
+                                        "Email".to_string(),
+                                    ]);
+                                    for i in 0..100_000 {
+                                        grid.add_row(vec![
+                                            i.to_string(),
+                                            format!("Name {}", i),
+                                            format!("user{}@example.com", i),
+                                        ]);
+                                    }
+
+                                    let start = Instant::now();
+                                    let rendered = grid.render();
+                                    let duration = start.elapsed();
+
+                                    assert!(!rendered.is_empty());
+                                    println!("Rendering 100,000 rows took: {:?}", duration);
+                                    assert!(
+                                        duration.as_secs_f64() < 1.0,
+                                        "Rendering took too long!"
+                                    );
+                                }
                             }
                         }
                         rows.push(row_map);
@@ -216,6 +243,7 @@ impl ResultsGrid {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Instant;
 
     #[test]
     fn test_virtualized_scrolling() {

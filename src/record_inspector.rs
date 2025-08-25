@@ -164,4 +164,21 @@ mod tests {
             "Validation failed for field 'nonexistent'"
         );
     }
+
+    #[test]
+    fn benchmark_record_inspector_large_record() {
+        let mut record = Record::new();
+        for i in 0..1000 {
+            record.set_field(&format!("field_{}", i), &format!("value_{}", i));
+        }
+        let inspector = RecordInspector { record };
+
+        let start = std::time::Instant::now();
+        let view = inspector.view_record();
+        let duration = start.elapsed();
+
+        assert!(!view.is_empty());
+        println!("Rendering a record with 1000 fields took: {:?}", duration);
+        assert!(duration.as_secs_f64() < 0.5, "Rendering took too long!");
+    }
 }
