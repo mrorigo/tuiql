@@ -25,7 +25,7 @@ This document tracks the current status of the TUIQL project, including complete
 - **Query Editor Enhancements:** ✅ Completed
 - **Schema Navigator Implementation:** ✅ Completed
 - **Plan Visualizer Enhancements:** ✅ Completed
-- **Record Inspector Stub:** ✅ Completed
+- **Record Inspector Enhancements:** ✅ Completed
 - **Schema Map Enhancements:** ✅ Completed
 - **Results Grid Enhancements:** ✅ Completed
 - **Command Palette Stub:** ✅ Completed
@@ -35,7 +35,7 @@ This document tracks the current status of the TUIQL project, including complete
 ## Ongoing Work
 
 - **Testing & Quality Assurance:**
-  - Writing unit tests for core modules.
+  - Writing unit tests for core modules, including Record Inspector enhancements.
   - Setting up integration tests for SQLite operations.
   - Implementing golden tests for TUI components.
 
