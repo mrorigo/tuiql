@@ -22,7 +22,7 @@ This document tracks the current status of the TUIQL project, including complete
 - **Configuration Loader:** ✅ Completed
 - **Diff Stub:** ✅ Completed
 - **Schema Map Stub:** ✅ Completed
-- **Query Editor Enhancements:** ✅ Completed
+- **Query Editor Enhancements:** ✅ Completed: Expanded linting rules for dangerous operations and improved query formatting capabilities.
 - **Schema Navigator Implementation:** ✅ Completed
 - **Plan Visualizer Enhancements:** ✅ Completed
 - **Record Inspector Enhancements:** ✅ Completed
@@ -40,7 +40,7 @@ This document tracks the current status of the TUIQL project, including complete
   - Implementing golden tests for TUI components.
 
 - **Feature Enhancements:**
-  - Adding advanced linting and formatting capabilities to the query editor.
+  - Adding advanced linting and formatting capabilities to the query editor. [COMPLETED]
   - Enhancing the results grid with virtualized scrolling and export options.
 
 ---

@@ -49,6 +49,10 @@ impl QueryEditor {
             Err("Dangerous operation: DELETE without WHERE clause".to_string())
         } else if query.starts_with("update") && !query.contains("where") {
             Err("Dangerous operation: UPDATE without WHERE clause".to_string())
+        } else if query.contains("select") && query.contains("join") && !query.contains("on") {
+            Err("Dangerous operation: Implicit JOIN without ON clause".to_string())
+        } else if query.contains("begin") && !query.contains("commit") {
+            Err("Dangerous operation: BEGIN without COMMIT or ROLLBACK".to_string())
         } else {
             Ok(())
         }
@@ -154,6 +158,30 @@ mod tests {
             assert_eq!(
                 editor.get_query(),
                 "SELECT\nname, email\nFROM\nusers\nWHERE\nid = 1;\n"
+            );
+        }
+
+        #[test]
+        fn test_lint_query_implicit_join() {
+            let mut editor = QueryEditor::new();
+            editor.set_query("SELECT * FROM users JOIN orders;");
+            let result = editor.lint_query();
+            assert!(result.is_err());
+            assert_eq!(
+                result.unwrap_err(),
+                "Dangerous operation: Implicit JOIN without ON clause"
+            );
+        }
+
+        #[test]
+        fn test_lint_query_uncommitted_transaction() {
+            let mut editor = QueryEditor::new();
+            editor.set_query("BEGIN TRANSACTION; SELECT * FROM users;");
+            let result = editor.lint_query();
+            assert!(result.is_err());
+            assert_eq!(
+                result.unwrap_err(),
+                "Dangerous operation: BEGIN without COMMIT or ROLLBACK"
             );
         }
     }
