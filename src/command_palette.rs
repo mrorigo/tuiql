@@ -1,4 +1,4 @@
-tuiql/src/command_palette.rs
+// Command Palette Stub Module for TUIQL
 // Command Palette Stub Module for TUIQL
 //
 // This module provides a basic implementation for a command palette,
@@ -84,7 +84,9 @@ impl CommandPalette {
         let q = query.to_lowercase();
         self.commands
             .iter()
-            .filter(|cmd| cmd.name.to_lowercase().contains(&q) || cmd.description.to_lowercase().contains(&q))
+            .filter(|cmd| {
+                cmd.name.to_lowercase().contains(&q) || cmd.description.to_lowercase().contains(&q)
+            })
             .cloned()
             .collect()
     }
@@ -95,7 +97,10 @@ impl CommandPalette {
     pub fn execute_command(&self, name: &str) -> Result<String, String> {
         for cmd in &self.commands {
             if cmd.name == name {
-                return Ok(format!("Executing command: {} - {}", cmd.name, cmd.description));
+                return Ok(format!(
+                    "Executing command: {} - {}",
+                    cmd.name, cmd.description
+                ));
             }
         }
         Err(format!("Command '{}' not found", name))

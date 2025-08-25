@@ -1,6 +1,7 @@
 use tracing::info;
 use tracing_subscriber;
 
+mod command_palette;
 mod db;
 mod repl;
 
@@ -30,9 +31,19 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use super::command_palette::CommandPalette;
+
     #[test]
     fn test_basic_math() {
         // A simple sanity test
         assert_eq!(2 + 2, 4);
+    }
+
+    #[test]
+    fn test_command_palette_integration() {
+        let palette = CommandPalette::new();
+        let filtered = palette.filter_commands("open");
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].name, "open");
     }
 }

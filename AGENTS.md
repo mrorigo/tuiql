@@ -23,3 +23,15 @@
 
 - Use conventional commit messages.
 - Include a description of the changes in the commit message.
+
+
+## Workflow
+
+- Read the Product Requirements (docs/PRD.md)
+- Read the current plan (docs/PLAN.md) and status (docs/STATUS.md)
+- Figure out what to do next
+- Implement the next step
+- Test the implementation
+- Update the plan (docs/PLAN.md)
+- Update the status (docs/STATUS.md)
+- Repeat the workflow until the product is complete.
