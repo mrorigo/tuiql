@@ -1,6 +1,35 @@
 use once_cell::sync::OnceCell;
 use rusqlite::{types::ValueRef, Connection};
+use std::collections::HashMap;
 use std::sync::Mutex;
+
+#[derive(Debug, Clone)]
+pub struct Column {
+    pub name: String,
+    pub type_name: String,
+    pub notnull: bool,
+    pub pk: bool,
+    pub dflt_value: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Index {
+    pub name: String,
+    pub unique: bool,
+    pub columns: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Table {
+    pub name: String,
+    pub columns: Vec<Column>,
+    pub indexes: Vec<Index>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Schema {
+    pub tables: HashMap<String, Table>,
+}
 
 static DB_CONNECTION: OnceCell<Mutex<Option<Connection>>> = OnceCell::new();
 
@@ -89,6 +118,138 @@ pub fn execute_query(sql: &str) -> Result<QueryResult, String> {
     Ok(QueryResult::new(columns, rows))
 }
 
+/// Retrieves schema information for the connected database.
+pub fn get_schema() -> Result<Schema, String> {
+    let conn_cell = DB_CONNECTION.get().ok_or("No database connection")?;
+    let conn_guard = conn_cell
+        .lock()
+        .map_err(|_| "Failed to acquire connection lock")?;
+    let conn = conn_guard.as_ref().ok_or("No active database connection")?;
+
+    let mut tables = HashMap::new();
+
+    // Get all tables
+    let mut stmt = conn
+        .prepare(
+            "SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+        )
+        .map_err(|e| e.to_string())?;
+
+    let table_iter = stmt
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })
+        .map_err(|e| e.to_string())?;
+
+    for table_result in table_iter {
+        let (table_name, _sql) = table_result.map_err(|e| e.to_string())?;
+
+        // Get columns for this table
+        let mut columns = Vec::new();
+        let mut col_stmt = conn
+            .prepare(&format!("PRAGMA table_info('{}')", table_name))
+            .map_err(|e| e.to_string())?;
+
+        let col_iter = col_stmt
+            .query_map([], |row| {
+                Ok(Column {
+                    name: row.get(1)?,
+                    type_name: row.get(2)?,
+                    notnull: row.get(3)?,
+                    pk: row.get(5)?,
+                    dflt_value: row.get(4)?,
+                })
+            })
+            .map_err(|e| e.to_string())?;
+
+        for col_result in col_iter {
+            columns.push(col_result.map_err(|e| e.to_string())?);
+
+            #[test]
+            fn test_schema_introspection() {
+                setup_test_db();
+
+                let schema = get_schema().unwrap();
+                let test_table = schema.tables.get("test").unwrap();
+
+                // Check columns
+                assert_eq!(test_table.columns.len(), 3);
+                assert_eq!(test_table.columns[0].name, "id");
+                assert_eq!(test_table.columns[0].type_name, "INTEGER");
+                assert!(test_table.columns[0].pk);
+
+                // Check indexes
+                assert_eq!(test_table.indexes.len(), 2);
+                let name_idx = test_table
+                    .indexes
+                    .iter()
+                    .find(|i| i.name == "idx_test_name")
+                    .unwrap();
+                let value_idx = test_table
+                    .indexes
+                    .iter()
+                    .find(|i| i.name == "idx_test_value")
+                    .unwrap();
+
+                assert!(!name_idx.unique);
+                assert!(value_idx.unique);
+                assert_eq!(name_idx.columns, vec!["name"]);
+                assert_eq!(value_idx.columns, vec!["value"]);
+            }
+        }
+
+        // Get indexes for this table
+        let mut indexes = Vec::new();
+        let mut idx_stmt = conn
+            .prepare(&format!("PRAGMA index_list('{}')", table_name))
+            .map_err(|e| e.to_string())?;
+
+        let idx_iter = idx_stmt
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, String>(1)?, // index name
+                    row.get::<_, bool>(2)?,   // unique
+                ))
+            })
+            .map_err(|e| e.to_string())?;
+
+        for idx_result in idx_iter {
+            let (idx_name, unique) = idx_result.map_err(|e| e.to_string())?;
+
+            // Get columns for this index
+            let mut idx_col_stmt = conn
+                .prepare(&format!("PRAGMA index_info('{}')", idx_name))
+                .map_err(|e| e.to_string())?;
+
+            let mut idx_columns = Vec::new();
+            let idx_col_iter = idx_col_stmt
+                .query_map([], |row| row.get::<_, String>(2))
+                .map_err(|e| e.to_string())?;
+
+            for col_result in idx_col_iter {
+                idx_columns.push(col_result.map_err(|e| e.to_string())?);
+            }
+
+            indexes.push(Index {
+                name: idx_name,
+                unique,
+                columns: idx_columns,
+            });
+        }
+
+        tables.insert(
+            table_name,
+            Table {
+                name: table_name.clone(),
+                columns,
+                indexes,
+            },
+        );
+    }
+
+    Ok(Schema { tables })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -98,6 +259,8 @@ mod tests {
         conn.execute_batch(
             "
             CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
+            CREATE INDEX idx_test_name ON test(name);
+            CREATE UNIQUE INDEX idx_test_value ON test(value);
             INSERT INTO test (name, value) VALUES ('test1', 1.1);
             INSERT INTO test (name, value) VALUES ('test2', 2.2);
         ",

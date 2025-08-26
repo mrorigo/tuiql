@@ -3,16 +3,16 @@
 /// This module provides functionality for navigating the database schema
 /// in a tree-based structure. It includes features such as displaying
 /// row counts, primary/foreign key indicators, and index details.
+use crate::db;
 use std::collections::HashMap;
 
 /// Represents a table in the schema navigator.
 #[derive(Debug, Clone)]
 pub struct Table {
     pub name: String,
-    pub row_count: usize,
-    pub primary_key: Option<String>,
-    pub foreign_keys: Vec<String>,
-    pub indexes: Vec<String>,
+    pub row_count: Option<usize>,
+    pub columns: Vec<db::Column>,
+    pub indexes: Vec<db::Index>,
 }
 
 /// Represents the schema navigator structure.
@@ -23,29 +23,27 @@ pub struct SchemaNavigator {
 
 impl SchemaNavigator {
     /// Creates a new, empty SchemaNavigator.
-    pub fn new() -> Self {
-        SchemaNavigator {
-            tables: HashMap::new(),
-        }
-    }
+    pub fn new() -> Result<Self, String> {
+        let schema = db::get_schema()?;
+        let mut tables = HashMap::new();
 
-    /// Adds a table to the schema navigator.
-    pub fn add_table(
-        &mut self,
-        name: String,
-        row_count: usize,
-        primary_key: Option<String>,
-        foreign_keys: Vec<String>,
-        indexes: Vec<String>,
-    ) {
-        let table = Table {
-            name: name.clone(),
-            row_count,
-            primary_key,
-            foreign_keys,
-            indexes,
-        };
-        self.tables.insert(name, table);
+        for (name, db_table) in schema.tables {
+            // Get row count
+            let row_count = match db::execute_query(&format!("SELECT COUNT(*) FROM {}", name)) {
+                Ok(result) => Some(result.rows[0][0].parse().unwrap_or(0)),
+                Err(_) => None,
+            };
+
+            let table = Table {
+                name: name.clone(),
+                row_count,
+                columns: db_table.columns,
+                indexes: db_table.indexes,
+            };
+            tables.insert(name, table);
+        }
+
+        Ok(SchemaNavigator { tables })
     }
 
     /// Renders the schema navigator as a tree-like string.
@@ -53,20 +51,30 @@ impl SchemaNavigator {
         let mut output = String::new();
         for table in self.tables.values() {
             output.push_str(&format!("Table: {}\n", table.name));
-            output.push_str(&format!("  Row Count: {}\n", table.row_count));
-            if let Some(pk) = &table.primary_key {
-                output.push_str(&format!("  Primary Key: {}\n", pk));
+            if let Some(count) = table.row_count {
+                output.push_str(&format!("  Row Count: {}\n", count));
             }
-            if !table.foreign_keys.is_empty() {
-                output.push_str("  Foreign Keys:\n");
-                for fk in &table.foreign_keys {
-                    output.push_str(&format!("    -> {}\n", fk));
-                }
+
+            output.push_str("  Columns:\n");
+            for col in &table.columns {
+                let flags = match (col.pk, col.notnull) {
+                    (true, _) => "[PK]",
+                    (false, true) => "[NOT NULL]",
+                    (false, false) => "",
+                };
+                output.push_str(&format!("    {} {} {}\n", col.name, col.type_name, flags));
             }
+
             if !table.indexes.is_empty() {
                 output.push_str("  Indexes:\n");
                 for index in &table.indexes {
-                    output.push_str(&format!("    - {}\n", index));
+                    let unique = if index.unique { "[UNIQUE] " } else { "" };
+                    output.push_str(&format!(
+                        "    - {}{} ({})\n",
+                        unique,
+                        index.name,
+                        index.columns.join(", ")
+                    ));
                 }
             }
         }
@@ -80,32 +88,23 @@ mod tests {
 
     #[test]
     fn test_schema_navigator_render() {
-        let mut navigator = SchemaNavigator::new();
-        navigator.add_table(
-            "users".to_string(),
-            100,
-            Some("id".to_string()),
-            vec!["orders".to_string()],
-            vec!["idx_users_name".to_string()],
-        );
-        navigator.add_table(
-            "orders".to_string(),
-            50,
-            Some("order_id".to_string()),
-            vec![],
-            vec!["idx_orders_date".to_string()],
-        );
+        // This test requires an active database connection
+        // First set up the test database
+        crate::db::tests::setup_test_db();
 
+        let navigator = SchemaNavigator::new().unwrap();
         let rendered = navigator.render();
-        assert!(rendered.contains("Table: users"));
-        assert!(rendered.contains("Row Count: 100"));
-        assert!(rendered.contains("Primary Key: id"));
-        assert!(rendered.contains("-> orders"));
-        assert!(rendered.contains("- idx_users_name"));
 
-        assert!(rendered.contains("Table: orders"));
-        assert!(rendered.contains("Row Count: 50"));
-        assert!(rendered.contains("Primary Key: order_id"));
-        assert!(rendered.contains("- idx_orders_date"));
+        // Test table name
+        assert!(rendered.contains("Table: test"));
+
+        // Test columns
+        assert!(rendered.contains("id INTEGER [PK]"));
+        assert!(rendered.contains("name TEXT"));
+        assert!(rendered.contains("value REAL"));
+
+        // Test indexes
+        assert!(rendered.contains("- idx_test_name"));
+        assert!(rendered.contains("[UNIQUE] idx_test_value"));
     }
 }

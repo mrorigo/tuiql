@@ -1,4 +1,4 @@
-use crate::db;
+use crate::{db, schema_navigator};
 use std::io::{self, Write};
 
 /// Represents a parsed REPL command.
@@ -19,6 +19,7 @@ pub enum Command {
     Diff { db_a: String, db_b: String },
     Help,
     Sql(String),
+    Tables,
     Unknown(String),
 }
 
@@ -111,6 +112,7 @@ pub fn parse_command(input: &str) -> Command {
             }
         }
         "help" => Command::Help,
+        "tables" => Command::Tables,
         _ => Command::Unknown(input.to_string()),
     }
 }
@@ -168,8 +170,13 @@ pub fn run_repl() {
                 println!("  :hist - Show command/query history");
                 println!("  :snip <action> - Manage query snippets");
                 println!("  :diff <dbA> <dbB> - Perform a schema diff between databases");
+                println!("  :tables - Show database schema information");
                 println!("\nOr enter SQL queries directly without any prefix.");
             }
+            Command::Tables => match schema_navigator::SchemaNavigator::new() {
+                Ok(navigator) => println!("{}", navigator.render()),
+                Err(e) => eprintln!("Error getting schema: {}", e),
+            },
             Command::Open(path) => match db::connect(&path) {
                 Ok(_) => println!("Successfully opened database: {}", path),
                 Err(e) => eprintln!("Error opening database: {}", e),
