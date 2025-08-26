@@ -5,27 +5,32 @@ tuiql/README.md
 
 > ⚠️ **Project Status**: Early Development - Core features are being implemented
 
-TUIQL is a blazing-fast, terminal-native, keyboard-centric SQLite client designed to make **schema comprehension**, **data navigation**, and **query iteration** effortless. It combines the speed of the `sqlite3` CLI with a delightful, discoverable TUI that scales from quick one-offs to day-long analysis sessions.
+TUIQL is a blazing-fast, terminal-native, keyboard-centric SQLite client designed to make **schema comprehension**, **data navigation**, and **query iteration** effortless. It combines the speed of the `sqlite3` CLI with a delightful, discoverable TUI that scales from quick one-offs to day-long analysis sessions. Focus on writing SQL, not fighting with your tools.
 
 ---
 
 ## Features
 
-### Core Features (🚧 In Development)
-- **Basic SQLite Operations**: ✅ Connect to SQLite databases via CLI or REPL
-- **REPL Interface**: ✅ Interactive command-line interface with command history
-- **Schema Map**: 🚧 Visualize relationships between tables (coming soon)
+### Core Features
+- **Database Operations**: ✅ Connect to SQLite databases via CLI or REPL, with transaction support
+- **REPL Interface**: ✅ Interactive command-line interface with:
+  - Persistent command history
+  - Transaction management (`:begin`, `:commit`, `:rollback`)
+  - Transaction status display
+  - Database context awareness
+- **Schema Navigation**: ✅ Browse tables, columns, indexes with row counts
 - **Query Editor**: 🚧 Multiline editing with syntax highlighting (in progress)
-- **Results Grid**: 🚧 Display query results with pagination
+- **Results Grid**: ✅ Display query results with column headers
 - **Record Inspector**: 🚧 View and edit records (planned)
 - **Plan Visualizer**: 🚧 Render `EXPLAIN QUERY PLAN` output (planned)
 
-### Additional Features (🚧 Planned)
-- **Command Palette**: ✅ Basic command support (`:open`, `:help`, etc.)
-- **Command Auto-completion**: ✅ Tab completion for commands
-- **History & Snippets**: 🚧 Save and replay queries (planned)
-- **Performance Optimization**: 🚧 Handle large datasets efficiently (planned)
-- **Extensibility**: 🚧 Plugin support (future enhancement)
+### Additional Features
+- **Command Palette**: ✅ Rich command support (`:open`, `:help`, `:tables`, etc.)
+- **Query History**: ✅ Persistent history with success/failure tracking
+- **Safety Features**: ✅ Transaction guards and state management
+- **Auto-completion**: 🚧 Tab completion for SQL and commands (in progress)
+- **Performance**: ✅ Fast response times for common operations
+- **Extensibility**: 🚧 Plugin support (planned)
 
 ---
 
@@ -67,14 +72,72 @@ tuiql
 ```
 
 ### Available Commands
+Core commands:
 - `:help` - List all available commands and their descriptions
 - `:open <path>` - Open a database
-- `:attach <name> <path>` - Attach another database
+- `:attach <n> <path>` - Attach another database
+- `:tables` - Show database schema information
+
+Transaction management:
+- `:begin` - Start a new transaction
+- `:commit` - Commit current transaction
+- `:rollback` - Rollback current transaction
+
+Database settings:
 - `:ro` - Toggle read-only mode
 - `:rw` - Toggle read-write mode
+- `:pragma <name> [value]` - View or set pragma values
+
+Navigation:
+- `:hist` - Show command/query history
 - `:quit` - Exit the application
 
 More commands and keybindings will be added as features are implemented.
+
+### Example Session
+```
+$ tuiql example.db
+Welcome to tuiql! A blazing-fast, terminal-native SQLite client.
+Attempting to open database: example.db
+Successfully connected to database: example.db
+Starting interactive mode with connected database.
+example.db> :tables
+Table: users
+  Row Count: 3
+  Columns:
+    id INTEGER [PK]
+    name TEXT [NOT NULL]
+    email TEXT
+  Indexes:
+    - idx_users_email (email)
+
+example.db> :begin
+Transaction started
+example.db*> SELECT * FROM users;
+id | name  | email
+---+-------+------------------
+1  | Alice | alice@email.com
+2  | Bob   | bob@email.com
+3  | Carol | carol@email.com
+
+(3 rows)
+example.db*> INSERT INTO users (name, email) VALUES ('Dave', 'dave@email.com');
+example.db*> SELECT COUNT(*) FROM users;
+count(*)
+--------
+4
+
+(1 row)
+example.db*> :rollback
+Transaction rolled back
+example.db> SELECT COUNT(*) FROM users;
+count(*)
+--------
+3
+
+(1 row)
+example.db> :quit
+```
 
 ---
 
