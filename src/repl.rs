@@ -1,3 +1,4 @@
+use crate::db;
 use std::io::{self, Write};
 
 /// Represents a parsed REPL command.
@@ -166,6 +167,10 @@ pub fn run_repl() {
                 println!("  :snip <action> - Manage query snippets");
                 println!("  :diff <dbA> <dbB> - Perform a schema diff between databases");
             }
+            Command::Open(path) => match db::connect(&path) {
+                Ok(_) => println!("Successfully opened database: {}", path),
+                Err(e) => eprintln!("Error opening database: {}", e),
+            },
             _ => println!("You entered: {:?}", command),
         }
     }

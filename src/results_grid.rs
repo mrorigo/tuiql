@@ -160,7 +160,11 @@ impl ResultsGrid {
         if !self.headers.is_empty() {
             output.push_str(&self.headers.join(" | "));
             output.push('\n');
-            let underline: Vec<String> = self.headers.iter().map(|h| "-".repeat(h.len())).collect();
+            let underline: Vec<String> = self
+                .headers
+                .iter()
+                .map(|h| format!("{}", "-".repeat(h.len())))
+                .collect();
             output.push_str(&underline.join(" | "));
             output.push('\n');
         }
@@ -220,7 +224,6 @@ mod tests {
         assert!(json.contains(r#""ID":"2""#));
         assert!(json.contains(r#""Name":"Bob""#));
     }
-
     #[test]
     fn test_export_to_markdown() {
         let mut grid = ResultsGrid::new();
@@ -228,8 +231,16 @@ mod tests {
         grid.add_row(vec!["1".to_string(), "Alice".to_string()]);
         grid.add_row(vec!["2".to_string(), "Bob".to_string()]);
         let markdown = grid.export("markdown").unwrap();
-        assert!(markdown.contains("ID | Name"));
-        assert!(markdown.contains("1 | Alice"));
-        assert!(markdown.contains("2 | Bob"));
+
+        // Normalize the markdown output by trimming whitespace and splitting into lines
+        let markdown_lines: Vec<&str> = markdown.trim().lines().collect();
+
+        // Define the expected markdown output
+        let expected_lines = vec!["ID | Name", "-- | ----", "1 | Alice", "2 | Bob"];
+
+        // Assert that each line matches the expected output
+        for (line, expected) in markdown_lines.iter().zip(expected_lines.iter()) {
+            assert_eq!(line.trim(), *expected);
+        }
     }
 }

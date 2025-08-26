@@ -27,10 +27,9 @@ fn main() {
         // Use the new db::connect function for SQLite connection stub
         if let Err(e) = db::connect(db_path) {
             eprintln!("Failed to connect to database: {}", e);
+            println!("No database provided. Running in interactive mode.");
+            repl::run_repl();
         }
-    } else {
-        println!("No database provided. Running in interactive mode.");
-        repl::run_repl();
     }
 }
 

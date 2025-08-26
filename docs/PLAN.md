@@ -56,14 +56,14 @@ This document outlines the strategy and high-level plan for the TUIQL project. I
 - Set up initial project scaffolding with tests. [COMPLETED: Cargo.toml and basic main.rs with logging and tests are in place]
 - Create a minimal viable version (MVP) to demonstrate key functionalities.
 - Document conventional commit messages and development guidelines.
-- [Iteration 1] Add CLI stub and SQLite connection stub.
-- [Iteration 2] Implement REPL stub, SQL execution stub, plan visualization stub, configuration loader, diff, and schema map stubs. [COMPLETED: Basic schema map rendering implemented]
+- [Iteration 1] Add CLI stub and SQLite connection stub. [COMPLETED: Basic CLI and SQLite connection implemented with error handling]
+- [Iteration 2] Implement REPL stub, SQL execution stub, plan visualization stub, configuration loader, diff, and schema map stubs. [COMPLETED: Basic schema map rendering and REPL with database connection implemented]
 - [Iteration 3] Add record inspector stub for view and edit records. [COMPLETED: Validation logic enhanced, tests written and passed]
 - [Iteration 4] Add command palette stub for quick command execution and integrate tests. [COMPLETED]
 - [Iteration 5] Add a help feature to provide users with a list of available commands and their descriptions. [COMPLETED]
 - [Iteration 5] Enhance Query Editor with advanced linting for dangerous SQL operations and improved query formatting. [COMPLETED]
 - [Iteration 6] Implement REPL command auto-completion to improve usability and user experience. [COMPLETED]
-- [Iteration 6] Enhance Results Grid with virtualized scrolling, sticky headers, and export options. [COMPLETED]
+- [Iteration 6] Enhance Results Grid with virtualized scrolling, sticky headers, and export options. [COMPLETED: Virtualized scrolling, sticky headers, and export functionality implemented; tests written and passed]
 - [Iteration 7] Verify and enhance the Query Editor with advanced linting, formatting, and execution capabilities.
 - [Iteration 8] Verify and enhance the Results Grid with virtualized scrolling, sticky headers, and export options.
 - [Iteration 9] Validate and complete the Record Inspector for editing and viewing records.
