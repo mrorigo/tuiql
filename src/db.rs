@@ -31,7 +31,13 @@ pub struct Schema {
     pub tables: HashMap<String, Table>,
 }
 
-pub(crate) static DB_CONNECTION: OnceCell<Mutex<Option<Connection>>> = OnceCell::new();
+#[derive(Debug)]
+pub struct DbState {
+    pub connection: Option<Connection>,
+    pub current_path: Option<String>,
+}
+
+pub(crate) static DB_STATE: OnceCell<Mutex<DbState>> = OnceCell::new();
 
 #[derive(Debug)]
 pub struct QueryResult {
@@ -76,9 +82,16 @@ pub fn connect(db_path: &str) -> Result<(), String> {
             }
 
             // Store the connection in our global state
-            DB_CONNECTION.get_or_init(|| Mutex::new(None));
-            if let Ok(mut guard) = DB_CONNECTION.get().unwrap().lock() {
-                *guard = Some(conn);
+            DB_STATE.get_or_init(|| {
+                Mutex::new(DbState {
+                    connection: None,
+                    current_path: None,
+                })
+            });
+
+            if let Ok(mut guard) = DB_STATE.get().unwrap().lock() {
+                guard.connection = Some(conn);
+                guard.current_path = Some(db_path.to_string());
                 Ok(())
             } else {
                 Err("Failed to acquire connection lock".to_string())
@@ -90,11 +103,14 @@ pub fn connect(db_path: &str) -> Result<(), String> {
 
 /// Executes a SQL query and returns the results.
 pub fn execute_query(sql: &str) -> Result<QueryResult, String> {
-    let conn_cell = DB_CONNECTION.get().ok_or("No database connection")?;
-    let conn_guard = conn_cell
+    let state_cell = DB_STATE.get().ok_or("No database connection")?;
+    let state_guard = state_cell
         .lock()
         .map_err(|_| "Failed to acquire connection lock")?;
-    let conn = conn_guard.as_ref().ok_or("No active database connection")?;
+    let conn = state_guard
+        .connection
+        .as_ref()
+        .ok_or("No active database connection")?;
 
     let mut stmt = conn.prepare(sql).map_err(|e| e.to_string())?;
 
@@ -120,11 +136,14 @@ pub fn execute_query(sql: &str) -> Result<QueryResult, String> {
 
 /// Retrieves schema information for the connected database.
 pub fn get_schema() -> Result<Schema, String> {
-    let conn_cell = DB_CONNECTION.get().ok_or("No database connection")?;
-    let conn_guard = conn_cell
+    let state_cell = DB_STATE.get().ok_or("No database connection")?;
+    let state_guard = state_cell
         .lock()
         .map_err(|_| "Failed to acquire connection lock")?;
-    let conn = conn_guard.as_ref().ok_or("No active database connection")?;
+    let conn = state_guard
+        .connection
+        .as_ref()
+        .ok_or("No active database connection")?;
 
     let mut tables = HashMap::new();
 
@@ -224,11 +243,13 @@ pub(crate) mod tests {
 
     pub fn setup_test_db() -> Connection {
         let conn = Connection::open_in_memory().unwrap();
+        // Reset the database to ensure we have exactly 2 rows
         conn.execute_batch(
             "
             CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
             CREATE INDEX idx_test_name ON test(name);
             CREATE UNIQUE INDEX idx_test_value ON test(value);
+            DELETE FROM test;
             INSERT INTO test (name, value) VALUES ('test1', 1.1);
             INSERT INTO test (name, value) VALUES ('test2', 2.2);
         ",
@@ -236,12 +257,18 @@ pub(crate) mod tests {
         .unwrap();
 
         // Initialize the connection singleton
-        DB_CONNECTION.get_or_init(|| Mutex::new(None));
+        DB_STATE.get_or_init(|| {
+            Mutex::new(DbState {
+                connection: None,
+                current_path: None,
+            })
+        });
 
         // Store the connection in our global state
         {
-            let mut guard = DB_CONNECTION.get().unwrap().lock().unwrap();
-            *guard = Some(conn);
+            let mut guard = DB_STATE.get().unwrap().lock().unwrap();
+            guard.connection = Some(conn);
+            guard.current_path = Some(":memory:".to_string());
         }
 
         // Open a new connection with the same configuration for returning
@@ -250,9 +277,15 @@ pub(crate) mod tests {
 
     /// Helper function to set a test database connection
     pub fn set_test_connection(conn: Connection) {
-        DB_CONNECTION.get_or_init(|| Mutex::new(None));
-        let mut guard = DB_CONNECTION.get().unwrap().lock().unwrap();
-        *guard = Some(conn);
+        DB_STATE.get_or_init(|| {
+            Mutex::new(DbState {
+                connection: None,
+                current_path: None,
+            })
+        });
+        let mut guard = DB_STATE.get().unwrap().lock().unwrap();
+        guard.connection = Some(conn);
+        guard.current_path = Some(":memory:".to_string());
     }
 
     #[test]

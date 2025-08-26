@@ -12,6 +12,7 @@ This document tracks the current status of the TUIQL project, including complete
 ### Milestone: **Core Features Development**
 
 - **Repository Setup:** ✅ Completed
+- **Database Connection Implementation:** ✅ Completed
 - **Initial Directory Structure:** ✅ Completed
 - **Basic Documentation:** ✅ Completed
 - **CLI Stub:** ✅ Completed
@@ -22,6 +23,8 @@ This document tracks the current status of the TUIQL project, including complete
 - **Configuration Loader:** ✅ Completed
 - **Diff Stub:** ✅ Completed
 - **Schema Map Stub:** ✅ Completed
+- **Query History:** ✅ Completed (Added persistent storage for query history with timestamps and metadata)
+- **Database Path Display:** ✅ Completed (Added current database path display in REPL prompt)
 - **Query Editor Enhancements:** ✅ Completed: Expanded linting rules for dangerous operations and improved query formatting capabilities.
 - **Schema Navigator Implementation:** ✅ Completed
 - **Plan Visualizer Enhancements:** ✅ Completed
@@ -37,18 +40,27 @@ This document tracks the current status of the TUIQL project, including complete
 ## Ongoing Work
 
 - **Testing & Quality Assurance:**
-  - Writing unit tests for core modules, including Record Inspector enhancements.
-  - Setting up integration tests for SQLite operations - connection and query execution tests implemented.
-  - Implementing golden tests for TUI components.
-  - Added error handling tests for database connections and SQL queries.
+  - **Completed:**
+    - Core module unit tests written and passing
+    - Integration tests for SQLite operations implemented
+    - Query history storage tests added
+    - Schema navigation tests completed
+    - Error handling tests for database connections and queries
+  - **Ongoing Work:**
+    - Implementing golden tests for TUI components
 
-- **Feature Enhancements:**
-  - Database connection and REPL command handling complete ✅
-  - SQL query execution with formatted results complete ✅
-  - Adding advanced linting and formatting capabilities to the query editor. 🚧 In Progress: Needs verification for execution and error handling.
-  - Enhancing the results grid with virtualized scrolling and export options. 🚧 In Progress: Requires testing for large datasets.
-  - Implementing the help command to list all available commands and their descriptions. ✅ Completed.
-  - Adding command auto-completion to the REPL for improved usability. ✅ Completed.
+  - **Feature Enhancements:**
+    - Database connection and REPL command handling complete ✅
+    - SQL query execution with formatted results complete ✅
+    - Adding advanced linting and formatting capabilities to the query editor. 🚧 In Progress: Needs verification for execution and error handling.
+    - Enhancing the results grid with virtualized scrolling and export options. 🚧 In Progress: Requires testing for large datasets.
+    - Implementing the help command to list all available commands and their descriptions. ✅ Completed
+    - Adding command auto-completion to the REPL for improved usability. ✅ Completed
+    - Implemented query history with persistent storage ✅ Completed:
+      - Added storage module for managing query history
+      - Implemented `:hist` command to display recent queries
+      - Added automatic tracking of query execution time and success status
+      - Stored history entries in SQLite database with timestamps
 
 ---
 
@@ -56,9 +68,14 @@ This document tracks the current status of the TUIQL project, including complete
 
 1. **Schema Navigator:**
    - Implement a tree-based schema navigator with badges for row counts, PK/FK indicators, and index details. ✅ Completed
+   - Added accurate row count display and table metadata ✅ Completed
 2. **Schema Map:**
    - Parse real schema data to generate a map.
    - Visualize relationships between tables using ASCII diagrams.
+3. **Query History:**
+   - Implemented persistent storage for query history ✅ Completed
+   - Added execution time tracking ✅ Completed
+   - Added success/failure status tracking ✅ Completed
 
 3. **Results Grid:**
    - Add support for inline JSON tree views and type-aware cell rendering.

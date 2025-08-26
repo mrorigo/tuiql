@@ -4,12 +4,12 @@ This document outlines the strategy and high-level plan for the TUIQL project. I
 
 ## Objectives
 
-- Create a blazing-fast, terminal-native SQLite client
-- Focus on schema comprehension, data navigation, and query iteration
-- Achieve < 2s time-to-first-result on commodity laptops
-- Maintain 90% keyboard accessibility with median 3 keystrokes to execute last query
-- Ensure < 10ms TUI frame budget with 30+ FPS on 100k row scrolling
-- Achieve P99 zero panics across 10k sessions
+- Create a blazing-fast, terminal-native SQLite client ✅
+- Focus on schema comprehension, data navigation, and query iteration 🚧
+- Achieve < 2s time-to-first-result on commodity laptops ✅
+- Maintain 90% keyboard accessibility with median 3 keystrokes to execute last query 🚧
+- Ensure < 10ms TUI frame budget with 30+ FPS on 100k row scrolling 🚧
+- Achieve P99 zero panics across 10k sessions 🚧
 
 ## Architecture
 
@@ -33,12 +33,13 @@ crates/
 - [x] Basic SQLite connection handling
 - [x] REPL with command support
 - [x] SQL execution and result display
-- [ ] Basic navigation tree
-- [ ] Simple history tracking
+- [x] Basic navigation tree
+- [x] Simple history tracking
 - [x] Unit tests for core functionality
 
-### M1: Enhanced Query Support
-- [ ] Schema cache implementation
+### M1: Enhanced Query Support (Current Sprint)
+- [x] Schema cache implementation
+- [ ] Transaction management (BEGIN/COMMIT/ROLLBACK)
 - [ ] Query auto-completion
 - [ ] Basic record inspector
 - [ ] Export functionality (CSV/JSON/MD)
@@ -90,16 +91,16 @@ crates/
 ## Current Sprint Tasks
 
 ### In Progress
-- Implement database object navigation tree
-- Add schema cache for object metadata
-- Implement history tracking
-- Add support for transaction management
+- Implement transaction management (BEGIN/COMMIT/ROLLBACK)
+- Add auto-completion for SQL queries
+- Design and implement record inspector
+- Add export functionality
 
 ### Next Up
-- Navigation tree for database objects
-- Transaction management (BEGIN/COMMIT/ROLLBACK)
-- Schema cache implementation
-- Query history with search
+- Add transaction command handlers
+- Implement transaction state tracking
+- Add JSON tree viewer for JSON columns
+- Implement basic query plan visualization
 
 ### Completed
 - [x] Repository setup and documentation

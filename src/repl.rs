@@ -1,5 +1,20 @@
-use crate::{db, schema_navigator};
+use crate::{
+    db, schema_navigator,
+    storage::{HistoryEntry, Storage},
+};
+use dirs::data_dir;
 use std::io::{self, Write};
+use std::path::PathBuf;
+use std::time::Instant;
+
+#[derive(Debug, Default)]
+struct ReplState {}
+
+impl ReplState {
+    fn new() -> Self {
+        Self {}
+    }
+}
 
 /// Represents a parsed REPL command.
 #[derive(Debug, PartialEq)]
@@ -122,12 +137,29 @@ pub fn parse_command(input: &str) -> Command {
 pub fn run_repl() {
     use crate::command_palette::CommandPalette;
 
+    let _state = ReplState::new();
     println!("Welcome to the tuiql REPL! Type :quit to exit.");
     let mut input = String::new();
     let command_palette = CommandPalette::new();
 
+    // Initialize storage
+    let mut data_path = data_dir().unwrap_or_else(|| PathBuf::from("."));
+    data_path.push("tuiql");
+    std::fs::create_dir_all(&data_path).expect("Failed to create data directory");
+    data_path.push("history.db");
+
+    let storage = Storage::new(data_path).expect("Failed to initialize storage");
+
     loop {
-        print!("> ");
+        if let Ok(guard) = db::DB_STATE.get().unwrap().lock() {
+            if let Some(path) = &guard.current_path {
+                print!("{}> ", path);
+            } else {
+                print!("> ");
+            }
+        } else {
+            print!("> ");
+        }
         io::stdout().flush().expect("Failed to flush stdout");
         input.clear();
         io::stdin()
@@ -154,6 +186,25 @@ pub fn run_repl() {
 
         let command = parse_command(&trimmed);
         match command {
+            Command::Hist => match storage.get_recent_history(10) {
+                Ok(entries) => {
+                    println!("Recent command history:");
+                    for entry in entries {
+                        let timestamp = chrono::DateTime::from_timestamp(entry.timestamp, 0)
+                            .unwrap_or_default()
+                            .format("%Y-%m-%d %H:%M:%S")
+                            .to_string();
+                        println!(
+                            "[{}] {} ({}ms) - {}",
+                            timestamp,
+                            if entry.success { "✓" } else { "✗" },
+                            entry.duration_ms.unwrap_or(0),
+                            entry.query
+                        );
+                    }
+                }
+                Err(e) => eprintln!("Error retrieving history: {}", e),
+            },
             Command::Help => {
                 println!("Available commands:");
                 println!("  :help - List all available commands and their descriptions");
@@ -185,6 +236,7 @@ pub fn run_repl() {
                 if sql.trim().is_empty() {
                     continue;
                 }
+                let start_time = Instant::now();
                 match db::execute_query(&sql) {
                     Ok(result) => {
                         // Print column headers
@@ -196,8 +248,49 @@ pub fn run_repl() {
                             println!("{}", row.join(" | "));
                         }
                         println!("\n({} rows)", result.row_count);
+
+                        // Record successful query in history
+                        let duration = start_time.elapsed().as_millis() as i64;
+                        let entry = HistoryEntry::new(
+                            sql.to_string(),
+                            db::DB_STATE
+                                .get()
+                                .unwrap()
+                                .lock()
+                                .unwrap()
+                                .current_path
+                                .clone()
+                                .unwrap_or_else(|| "main".to_string()),
+                            true,
+                            Some(duration),
+                            Some(result.row_count as i64),
+                        );
+                        if let Err(e) = storage.add_history(entry) {
+                            eprintln!("Failed to save to history: {}", e);
+                        }
                     }
-                    Err(e) => eprintln!("Error executing query: {}", e),
+                    Err(e) => {
+                        eprintln!("Error executing query: {}", e);
+                        // Record failed query in history
+                        let duration = start_time.elapsed().as_millis() as i64;
+                        let entry = HistoryEntry::new(
+                            sql.to_string(),
+                            db::DB_STATE
+                                .get()
+                                .unwrap()
+                                .lock()
+                                .unwrap()
+                                .current_path
+                                .clone()
+                                .unwrap_or_else(|| "main".to_string()),
+                            false,
+                            Some(duration),
+                            None,
+                        );
+                        if let Err(e) = storage.add_history(entry) {
+                            eprintln!("Failed to save to history: {}", e);
+                        }
+                    }
                 }
             }
             _ => println!("You entered: {:?}", command),
@@ -208,6 +301,23 @@ pub fn run_repl() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        db,
+        storage::{HistoryEntry, Storage},
+    };
+    use tempfile::NamedTempFile;
+
+    fn create_test_db() -> NamedTempFile {
+        let file = NamedTempFile::new().unwrap();
+        let conn = rusqlite::Connection::open(file.path()).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT);
+             INSERT INTO test (name) VALUES ('Alice');
+             INSERT INTO test (name) VALUES ('Bob');",
+        )
+        .unwrap();
+        file
+    }
 
     #[test]
     fn test_parse_open_command() {
@@ -273,5 +383,69 @@ mod tests {
     fn test_parse_sql_query() {
         let cmd = parse_command("SELECT * FROM users");
         assert_eq!(cmd, Command::Sql("SELECT * FROM users".to_string()));
+    }
+
+    #[test]
+    fn test_database_connection_state() {
+        let db_file = create_test_db();
+        let path = db_file.path().to_str().unwrap();
+
+        // Test database connection
+        assert!(db::connect(path).is_ok());
+
+        // Verify connection state
+        let state = db::DB_STATE.get().unwrap().lock().unwrap();
+        assert!(state.connection.is_some());
+        assert_eq!(state.current_path.as_ref().unwrap(), path);
+
+        // Clean up
+        drop(state);
+        db_file.close().unwrap();
+    }
+
+    #[test]
+    fn test_sql_execution_with_history() {
+        let db_file = create_test_db();
+        let path = db_file.path().to_str().unwrap();
+        assert!(db::connect(path).is_ok());
+
+        // Create a temporary directory for history database
+        let temp_dir = tempfile::tempdir().unwrap();
+        let mut history_path = temp_dir.path().to_path_buf();
+        history_path.push("history.db");
+
+        let storage = Storage::new(history_path).unwrap();
+
+        // Execute a query
+        let sql = "SELECT * FROM test";
+        let result = db::execute_query(sql).unwrap();
+
+        // Verify query results
+        assert_eq!(result.columns, vec!["id", "name"]);
+        assert_eq!(result.rows.len(), 2);
+        assert_eq!(result.rows[0][1], "Alice");
+        assert_eq!(result.rows[1][1], "Bob");
+
+        // Add entry to history (since execute_query alone doesn't add history)
+        let entry = HistoryEntry::new(
+            sql.to_string(),
+            path.to_string(),
+            true,
+            Some(0),
+            Some(result.row_count as i64),
+        );
+        storage.add_history(entry).unwrap();
+
+        // Check history entry
+        let history = storage.get_recent_history(1).unwrap();
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0].query, sql);
+        assert!(history[0].success);
+        assert_eq!(history[0].row_count, Some(2));
+
+        // Clean up
+        drop(storage);
+        db_file.close().unwrap();
+        temp_dir.close().unwrap();
     }
 }

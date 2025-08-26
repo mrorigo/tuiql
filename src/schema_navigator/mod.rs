@@ -29,8 +29,8 @@ impl SchemaNavigator {
 
         for (name, db_table) in schema.tables {
             // Get row count
-            let row_count = match db::execute_query(&format!("SELECT COUNT(*) FROM {}", name)) {
-                Ok(result) => Some(result.rows[0][0].parse().unwrap_or(0)),
+            let row_count = match db::execute_query(&format!("SELECT COUNT(*) FROM '{}'", name)) {
+                Ok(result) => Some(result.rows[0][0].parse::<usize>().unwrap_or(0)),
                 Err(_) => None,
             };
 
@@ -97,7 +97,11 @@ mod tests {
 
         // Verify table structure
         assert!(rendered.contains("Table: test"));
-        assert!(rendered.contains("Row Count: 2")); // Two test rows were inserted
+        assert!(
+            rendered.contains("Row Count: 2"),
+            "Expected row count of 2 in output:\n{}",
+            rendered
+        ); // Two test rows were inserted
 
         // Verify column definitions
         assert!(rendered.contains("id INTEGER [PK]"));

@@ -1,14 +1,10 @@
 use tracing::info;
 use tracing_subscriber;
-
-mod command_palette;
-mod db;
-mod plan;
-mod query_editor;
-mod record_inspector;
-mod repl;
-mod schema_map;
-mod schema_navigator;
+use tuiql::{
+    command_palette,
+    db::{self},
+    repl, schema_navigator,
+};
 
 fn main() {
     // Initialize the logging system using tracing subscriber
@@ -32,7 +28,8 @@ fn main() {
             match db::connect(db_path) {
                 Ok(_) => {
                     println!("Successfully connected to database: {}", db_path);
-                    // TODO: Initialize TUI and start main application loop
+                    println!("Starting interactive mode with connected database.");
+                    repl::run_repl();
                 }
                 Err(e) => {
                     eprintln!("Failed to connect to database: {}", e);
@@ -46,13 +43,8 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::command_palette::CommandPalette;
-
-    #[test]
-    fn test_basic_math() {
-        // A simple sanity test
-        assert_eq!(2 + 2, 4);
-    }
+    use super::*;
+    use tuiql::command_palette::CommandPalette;
 
     #[test]
     fn test_command_palette_integration() {
