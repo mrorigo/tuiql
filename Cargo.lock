@@ -870,6 +870,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "crossterm 0.25.0",
+ "once_cell",
  "ratatui",
  "reedline",
  "regex",

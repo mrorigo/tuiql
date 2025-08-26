@@ -4,74 +4,109 @@ This document outlines the strategy and high-level plan for the TUIQL project. I
 
 ## Objectives
 
-- Define clear milestones and deliverables.
-- Establish a robust development workflow with continuous integration.
-- Develop a scalable architecture using idiomatic Rust.
-- Implement thorough testing for every component.
+- Create a blazing-fast, terminal-native SQLite client
+- Focus on schema comprehension, data navigation, and query iteration
+- Achieve < 2s time-to-first-result on commodity laptops
+- Maintain 90% keyboard accessibility with median 3 keystrokes to execute last query
+- Ensure < 10ms TUI frame budget with 30+ FPS on 100k row scrolling
+- Achieve P99 zero panics across 10k sessions
+
+## Architecture
+
+```
+crates/
+  app/                 # main binary, arg parsing, config
+  core/                # domain: catalog cache, query exec, diff, plan
+  tui/                 # ratatui widgets, layout, theming
+  repl/                # reedline integration, command palette
+  sql/                 # sqlparser wrappers, formatting, lint rules
+  storage/             # exports, history, snippets, keybindings
+  drivers/sqlite/      # rusqlite wrapper, pragmas, vtab helpers
+  plugins/             # extension points & dynamic registration
+```
 
 ## Milestones
 
-1. **Project Initialization**
-   - Repository setup and basic documentation.
-   - Establish initial directory structure.
-   - Create minimal viable product (MVP) plan.
+### M0: Basic Functionality (Current Sprint)
+- [x] Repository setup and basic documentation
+- [x] Initial directory structure
+- [x] Basic SQLite connection handling
+- [x] REPL with command support
+- [ ] SQL execution and result display
+- [ ] Basic navigation tree
+- [ ] Simple history tracking
+- [ ] Unit tests for core functionality
 
-2. **Core Features Development**
-   - Define core modules and functionalities.
-   - Develop key features in a modular and test-driven manner.
-   - Implement continuous integration and testing.
+### M1: Enhanced Query Support
+- [ ] Schema cache implementation
+- [ ] Query auto-completion
+- [ ] Basic record inspector
+- [ ] Export functionality (CSV/JSON/MD)
+- [ ] JSON tree viewer
+- [ ] Basic query plan visualization
+- [ ] Integration tests for query features
 
-3. **Testing & Quality Assurance**
-   - Write comprehensive unit tests, integration tests, and system tests.
-   - Setup automated testing pipelines.
-   - Perform regular code reviews and refactoring.
+### M2: Advanced Features
+- [ ] Schema map visualization
+- [ ] FTS5 helper implementation
+- [ ] JSON1 helper implementation
+- [ ] Database diff functionality
+- [ ] Cancellable query support
+- [ ] Configuration system
+- [ ] Property tests for DDL operations
 
-4. **Deployment & Documentation**
-   - Finalize deployment strategies.
-   - Complete user and developer documentation.
-   - Plan for iterative feedback and improvements.
+### M3: Polish & Extensions
+- [ ] Plugin system implementation
+- [ ] Plan cost overlay visualization
+- [ ] Dangerous operation linting
+- [ ] ER diagram auto-layout
+- [ ] Performance optimization
+- [ ] Cross-platform testing
+- [ ] Documentation completion
 
-## Work Process
+## Development Process
 
-- **Planning & Tracking:** 
-  - Keep track of progress using this document and update regularly.
-  - Decompose features into smaller, manageable tasks.
+### Testing Strategy
+- **Unit Tests**: Core components (catalog, plan tree, diff engine)
+- **Golden Tests**: Widget render snapshots with ratatui harness
+- **Integration Tests**: Sample database operations
+- **Property Tests**: DDL operations (diff → apply → compare)
+- **Performance Tests**: Benchmark against 1M row/100 table datasets
 
-- **Development:** 
-  - Use idiomatic Rust with an emphasis on safety, efficiency, and clarity.
-  - Follow best practices for code structure and modularity.
-  - Commit changes frequently with clear commit messages as per conventional commits.
+### Development Guidelines
+- Use idiomatic Rust with focus on safety and performance
+- Write tests for all new code and modified existing code
+- Follow conventional commit format
+- Document all public APIs and user-facing features
+- Benchmark performance-critical code paths
 
-- **Testing:** 
-  - Write tests for every module to ensure functionality and maintainability.
-  - Integrate automated tests to run on every commit.
+### Safety & Performance
+- Auto-open databases in autocommit mode
+- Implement safe edit mode with WHERE clause guards
+- Support read-only mode per connection
+- Use virtual scrolling for large datasets
+- Implement cancellable long-running queries
 
-- **Collaboration:**
-  - Maintain clear documentation for onboarding new developers.
-  - Use code reviews as an opportunity to learn and improve code quality.
+## Current Sprint Tasks
 
-## Immediate Next Steps
+### In Progress
+- Implement basic SQL execution
+- Add navigation tree for database objects
+- Implement history tracking
+- Write core functionality tests
 
-- Finalize core feature list and architecture.
-- Set up initial project scaffolding with tests. [COMPLETED: Cargo.toml and basic main.rs with logging and tests are in place]
-- Create a minimal viable version (MVP) to demonstrate key functionalities.
-- Document conventional commit messages and development guidelines.
-- [Iteration 1] Add CLI stub and SQLite connection stub. [COMPLETED: Basic CLI and SQLite connection implemented with error handling]
-- [Iteration 2] Implement REPL stub, SQL execution stub, plan visualization stub, configuration loader, diff, and schema map stubs. [COMPLETED: Basic schema map rendering and REPL with database connection implemented]
-- [Iteration 3] Add record inspector stub for view and edit records. [COMPLETED: Validation logic enhanced, tests written and passed]
-- [Iteration 4] Add command palette stub for quick command execution and integrate tests. [COMPLETED]
-- [Iteration 5] Add a help feature to provide users with a list of available commands and their descriptions. [COMPLETED]
-- [Iteration 5] Enhance Query Editor with advanced linting for dangerous SQL operations and improved query formatting. [COMPLETED]
-- [Iteration 6] Implement REPL command auto-completion to improve usability and user experience. [COMPLETED]
-- [Iteration 6] Enhance Results Grid with virtualized scrolling, sticky headers, and export options. [COMPLETED: Virtualized scrolling, sticky headers, and export functionality implemented; tests written and passed]
-- [Iteration 7] Verify and enhance the Query Editor with advanced linting, formatting, and execution capabilities.
-- [Iteration 8] Verify and enhance the Results Grid with virtualized scrolling, sticky headers, and export options.
-- [Iteration 9] Validate and complete the Record Inspector for editing and viewing records.
-- [Iteration 10] Verify and implement the Plan Visualizer for rendering `EXPLAIN QUERY PLAN`.
+### Next Up
+- Schema cache implementation
+- Query auto-completion
+- Record inspector basics
+- Export functionality
 
-- [Iteration 11] Confirm and enhance the Schema Map with grouping, highlighting relationships, and advanced visualization.
-- [Iteration 12] Implement Extensions & Helpers for JSON1 and FTS5 functionality.
-- [Iteration 13] Add History, Snippets & Macros for query history, pinned queries, and macros.
-- [Iteration 14] Verify and implement Keyboard Shortcuts for Vim/Emacs modes and other actions.
+### Completed
+- [x] Repository setup and documentation
+- [x] Project structure and architecture
+- [x] SQLite connection handling
+- [x] Basic REPL implementation
+- [x] Command parsing and execution
+- [x] Help command system
 
 This plan will evolve as the project grows. Continuous improvements and adaptations will be made to meet the project's objectives and timelines.

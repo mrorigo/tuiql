@@ -18,16 +18,18 @@ pub enum Command {
     Snip(String),
     Diff { db_a: String, db_b: String },
     Help,
+    Sql(String),
     Unknown(String),
 }
 
 /// Parses a user input string into a corresponding `Command`.
 ///
-/// The input must start with a colon (`:`) to be interpreted as a command.
+/// If the input starts with a colon (`:`), it is interpreted as a command.
+/// Otherwise, it is treated as a SQL query.
 pub fn parse_command(input: &str) -> Command {
     let input = input.trim();
     if !input.starts_with(':') {
-        return Command::Unknown(input.to_string());
+        return Command::Sql(input.to_string());
     }
     let trimmed = &input[1..];
     let parts: Vec<&str> = trimmed.split_whitespace().collect();
@@ -166,11 +168,31 @@ pub fn run_repl() {
                 println!("  :hist - Show command/query history");
                 println!("  :snip <action> - Manage query snippets");
                 println!("  :diff <dbA> <dbB> - Perform a schema diff between databases");
+                println!("\nOr enter SQL queries directly without any prefix.");
             }
             Command::Open(path) => match db::connect(&path) {
                 Ok(_) => println!("Successfully opened database: {}", path),
                 Err(e) => eprintln!("Error opening database: {}", e),
             },
+            Command::Sql(sql) => {
+                if sql.trim().is_empty() {
+                    continue;
+                }
+                match db::execute_query(&sql) {
+                    Ok(result) => {
+                        // Print column headers
+                        println!("{}", result.columns.join(" | "));
+                        println!("{}", "-".repeat(result.columns.join(" | ").len()));
+
+                        // Print rows
+                        for row in result.rows {
+                            println!("{}", row.join(" | "));
+                        }
+                        println!("\n({} rows)", result.row_count);
+                    }
+                    Err(e) => eprintln!("Error executing query: {}", e),
+                }
+            }
             _ => println!("You entered: {:?}", command),
         }
     }
@@ -236,7 +258,13 @@ mod tests {
 
     #[test]
     fn test_parse_unknown_command() {
-        let cmd = parse_command("not a command");
-        assert_eq!(cmd, Command::Unknown("not a command".to_string()));
+        let cmd = parse_command(":invalid");
+        assert_eq!(cmd, Command::Unknown(":invalid".to_string()));
+    }
+
+    #[test]
+    fn test_parse_sql_query() {
+        let cmd = parse_command("SELECT * FROM users");
+        assert_eq!(cmd, Command::Sql("SELECT * FROM users".to_string()));
     }
 }
