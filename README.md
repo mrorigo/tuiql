@@ -3,24 +3,29 @@ tuiql/README.md
 
 # TUIQL: A Terminal-Native SQLite Client
 
+> ⚠️ **Project Status**: Early Development - Core features are being implemented
+
 TUIQL is a blazing-fast, terminal-native, keyboard-centric SQLite client designed to make **schema comprehension**, **data navigation**, and **query iteration** effortless. It combines the speed of the `sqlite3` CLI with a delightful, discoverable TUI that scales from quick one-offs to day-long analysis sessions.
 
 ---
 
 ## Features
 
-### Core Features
-- **Schema Map**: Visualize relationships between tables with an ER-like graph, including grouping by schema and highlighting circular references.
-- **Query Editor**: Multiline editing, syntax highlighting, advanced linting for dangerous SQL operations, and query formatting.
-- **Results Grid**: Virtualized scrolling, sticky headers, and export options (CSV, JSON, Markdown).
-- **Record Inspector**: View and edit records with type validation and safeguards, optimized for large records.
-- **Plan Visualizer**: Render `EXPLAIN QUERY PLAN` as a tree with cost/loop/row details and index usage highlights.
+### Core Features (🚧 In Development)
+- **Basic SQLite Operations**: ✅ Connect to SQLite databases via CLI or REPL
+- **REPL Interface**: ✅ Interactive command-line interface with command history
+- **Schema Map**: 🚧 Visualize relationships between tables (coming soon)
+- **Query Editor**: 🚧 Multiline editing with syntax highlighting (in progress)
+- **Results Grid**: 🚧 Display query results with pagination
+- **Record Inspector**: 🚧 View and edit records (planned)
+- **Plan Visualizer**: 🚧 Render `EXPLAIN QUERY PLAN` output (planned)
 
-### Additional Features
-- **Command Palette**: Fuzzy search for commands like "Run", "Attach DB", "Export CSV", and more.
-- **History & Snippets**: Save, pin, and replay queries with ease.
-- **Performance Optimization**: Handles large datasets with virtualized paging and efficient rendering.
-- **Extensibility**: Plugin support for custom commands, panels, and exporters.
+### Additional Features (🚧 Planned)
+- **Command Palette**: ✅ Basic command support (`:open`, `:help`, etc.)
+- **Command Auto-completion**: ✅ Tab completion for commands
+- **History & Snippets**: 🚧 Save and replay queries (planned)
+- **Performance Optimization**: 🚧 Handle large datasets efficiently (planned)
+- **Extensibility**: 🚧 Plugin support (future enhancement)
 
 ---
 
@@ -53,20 +58,23 @@ TUIQL is a blazing-fast, terminal-native, keyboard-centric SQLite client designe
 
 ### Opening a Database
 ```bash
+# Open directly with a database path
 tuiql path/to/database.db
+
+# Or start in interactive mode and connect later
+tuiql
+> :open path/to/database.db
 ```
 
-### Keybindings
-- **Command Palette**: `Ctrl+P`
-- **Run Query**: `F5`
-- **Toggle Modes**: `E` (Editor), `R` (Results), `S` (Schema Map), `P` (Plan Visualizer)
-- **Navigate**: `hjkl` (Vim-style navigation)
+### Available Commands
+- `:help` - List all available commands and their descriptions
+- `:open <path>` - Open a database
+- `:attach <name> <path>` - Attach another database
+- `:ro` - Toggle read-only mode
+- `:rw` - Toggle read-write mode
+- `:quit` - Exit the application
 
-### Commands
-- `:open <path>`: Open a database.
-- `:attach <name> <path>`: Attach another database.
-- `:export [csv|json|md]`: Export the current result set.
-- `:erd [table]`: Open the schema map and focus on a specific table.
+More commands and keybindings will be added as features are implemented.
 
 ---
 
@@ -80,12 +88,6 @@ tuiql path/to/database.db
 ### Running Tests
 ```bash
 cargo test
-```
-
-### Benchmarking
-To evaluate performance:
-```bash
-cargo bench
 ```
 
 ---
