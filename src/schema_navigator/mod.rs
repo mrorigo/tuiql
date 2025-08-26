@@ -88,23 +88,36 @@ mod tests {
 
     #[test]
     fn test_schema_navigator_render() {
-        // This test requires an active database connection
-        // First set up the test database
-        crate::db::tests::setup_test_db();
+        // Set up a clean test database
+        db::tests::setup_test_db();
 
+        // Create and verify the navigator
         let navigator = SchemaNavigator::new().unwrap();
         let rendered = navigator.render();
 
-        // Test table name
+        // Verify table structure
         assert!(rendered.contains("Table: test"));
+        assert!(rendered.contains("Row Count: 2")); // Two test rows were inserted
 
-        // Test columns
+        // Verify column definitions
         assert!(rendered.contains("id INTEGER [PK]"));
         assert!(rendered.contains("name TEXT"));
         assert!(rendered.contains("value REAL"));
 
-        // Test indexes
-        assert!(rendered.contains("- idx_test_name"));
-        assert!(rendered.contains("[UNIQUE] idx_test_value"));
+        // Verify indexes
+        assert!(rendered.contains("- idx_test_name (name)"));
+        assert!(rendered.contains("[UNIQUE] idx_test_value (value)"));
+    }
+
+    #[test]
+    fn test_schema_navigator_empty_db() {
+        // Set up empty in-memory database
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        db::tests::set_test_connection(conn);
+
+        // Create navigator and verify empty state
+        let navigator = SchemaNavigator::new().unwrap();
+        let rendered = navigator.render();
+        assert_eq!(rendered, ""); // Empty schema should render nothing
     }
 }

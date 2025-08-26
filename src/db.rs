@@ -31,7 +31,7 @@ pub struct Schema {
     pub tables: HashMap<String, Table>,
 }
 
-static DB_CONNECTION: OnceCell<Mutex<Option<Connection>>> = OnceCell::new();
+pub(crate) static DB_CONNECTION: OnceCell<Mutex<Option<Connection>>> = OnceCell::new();
 
 #[derive(Debug)]
 pub struct QueryResult {
@@ -164,38 +164,6 @@ pub fn get_schema() -> Result<Schema, String> {
 
         for col_result in col_iter {
             columns.push(col_result.map_err(|e| e.to_string())?);
-
-            #[test]
-            fn test_schema_introspection() {
-                setup_test_db();
-
-                let schema = get_schema().unwrap();
-                let test_table = schema.tables.get("test").unwrap();
-
-                // Check columns
-                assert_eq!(test_table.columns.len(), 3);
-                assert_eq!(test_table.columns[0].name, "id");
-                assert_eq!(test_table.columns[0].type_name, "INTEGER");
-                assert!(test_table.columns[0].pk);
-
-                // Check indexes
-                assert_eq!(test_table.indexes.len(), 2);
-                let name_idx = test_table
-                    .indexes
-                    .iter()
-                    .find(|i| i.name == "idx_test_name")
-                    .unwrap();
-                let value_idx = test_table
-                    .indexes
-                    .iter()
-                    .find(|i| i.name == "idx_test_value")
-                    .unwrap();
-
-                assert!(!name_idx.unique);
-                assert!(value_idx.unique);
-                assert_eq!(name_idx.columns, vec!["name"]);
-                assert_eq!(value_idx.columns, vec!["value"]);
-            }
         }
 
         // Get indexes for this table
@@ -238,9 +206,9 @@ pub fn get_schema() -> Result<Schema, String> {
         }
 
         tables.insert(
-            table_name,
+            table_name.clone(),
             Table {
-                name: table_name.clone(),
+                name: table_name,
                 columns,
                 indexes,
             },
@@ -251,10 +219,10 @@ pub fn get_schema() -> Result<Schema, String> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
-    fn setup_test_db() {
+    pub fn setup_test_db() -> Connection {
         let conn = Connection::open_in_memory().unwrap();
         conn.execute_batch(
             "
@@ -267,6 +235,21 @@ mod tests {
         )
         .unwrap();
 
+        // Initialize the connection singleton
+        DB_CONNECTION.get_or_init(|| Mutex::new(None));
+
+        // Store the connection in our global state
+        {
+            let mut guard = DB_CONNECTION.get().unwrap().lock().unwrap();
+            *guard = Some(conn);
+        }
+
+        // Open a new connection with the same configuration for returning
+        Connection::open_in_memory().unwrap()
+    }
+
+    /// Helper function to set a test database connection
+    pub fn set_test_connection(conn: Connection) {
         DB_CONNECTION.get_or_init(|| Mutex::new(None));
         let mut guard = DB_CONNECTION.get().unwrap().lock().unwrap();
         *guard = Some(conn);
@@ -300,5 +283,36 @@ mod tests {
         let result = execute_query("SELECT * FROM test WHERE name IS NULL").unwrap();
         assert_eq!(result.rows[0][1], "NULL");
         assert_eq!(result.rows[0][2], "NULL");
+    }
+    #[test]
+    fn test_schema_introspection() {
+        setup_test_db();
+
+        let schema = get_schema().unwrap();
+        let test_table = schema.tables.get("test").unwrap();
+
+        // Check columns
+        assert_eq!(test_table.columns.len(), 3);
+        assert_eq!(test_table.columns[0].name, "id");
+        assert_eq!(test_table.columns[0].type_name, "INTEGER");
+        assert!(test_table.columns[0].pk);
+
+        // Check indexes
+        assert_eq!(test_table.indexes.len(), 2);
+        let name_idx = test_table
+            .indexes
+            .iter()
+            .find(|i| i.name == "idx_test_name")
+            .unwrap();
+        let value_idx = test_table
+            .indexes
+            .iter()
+            .find(|i| i.name == "idx_test_value")
+            .unwrap();
+
+        assert!(!name_idx.unique);
+        assert!(value_idx.unique);
+        assert_eq!(name_idx.columns, vec!["name"]);
+        assert_eq!(value_idx.columns, vec!["value"]);
     }
 }
