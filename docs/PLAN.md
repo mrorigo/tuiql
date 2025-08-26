@@ -32,10 +32,10 @@ crates/
 - [x] Initial directory structure
 - [x] Basic SQLite connection handling
 - [x] REPL with command support
-- [ ] SQL execution and result display
+- [x] SQL execution and result display
 - [ ] Basic navigation tree
 - [ ] Simple history tracking
-- [ ] Unit tests for core functionality
+- [x] Unit tests for core functionality
 
 ### M1: Enhanced Query Support
 - [ ] Schema cache implementation
@@ -90,16 +90,16 @@ crates/
 ## Current Sprint Tasks
 
 ### In Progress
-- Implement basic SQL execution
-- Add navigation tree for database objects
+- Implement database object navigation tree
+- Add schema cache for object metadata
 - Implement history tracking
-- Write core functionality tests
+- Add support for transaction management
 
 ### Next Up
+- Navigation tree for database objects
+- Transaction management (BEGIN/COMMIT/ROLLBACK)
 - Schema cache implementation
-- Query auto-completion
-- Record inspector basics
-- Export functionality
+- Query history with search
 
 ### Completed
 - [x] Repository setup and documentation
@@ -108,5 +108,7 @@ crates/
 - [x] Basic REPL implementation
 - [x] Command parsing and execution
 - [x] Help command system
+- [x] SQL query execution and result display
+- [x] Core functionality tests
 
 This plan will evolve as the project grows. Continuous improvements and adaptations will be made to meet the project's objectives and timelines.

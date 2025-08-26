@@ -1,5 +1,5 @@
 use once_cell::sync::OnceCell;
-use rusqlite::{types::ValueRef, Connection, Error as SqliteError, Row, Statement};
+use rusqlite::{types::ValueRef, Connection};
 use std::sync::Mutex;
 
 static DB_CONNECTION: OnceCell<Mutex<Option<Connection>>> = OnceCell::new();
@@ -71,50 +71,47 @@ pub fn execute_query(sql: &str) -> Result<QueryResult, String> {
 
     // Get column names
     let columns: Vec<String> = stmt.column_names().into_iter().map(String::from).collect();
+    let column_count = stmt.column_count();
 
     // Execute query and collect rows
-    let rows: Result<Vec<Vec<String>>, SqliteError> = stmt
-        .query_map([], |row: &Row| {
+    let rows = stmt
+        .query_map([], |row| {
             let mut values = Vec::new();
-            for i in 0..row.column_count() {
+            for i in 0..column_count {
                 values.push(format_value(row.get_ref(i).unwrap()));
             }
             Ok(values)
         })
-        .map_err(|e| e)?
-        .collect();
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
 
-    match rows {
-        Ok(rows) => Ok(QueryResult::new(columns, rows)),
-        Err(e) => Err(e.to_string()),
-    }
+    Ok(QueryResult::new(columns, rows))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rusqlite::Result as SqliteResult;
 
-    fn setup_test_db() -> SqliteResult<()> {
-        let conn = Connection::open_in_memory()?;
+    fn setup_test_db() {
+        let conn = Connection::open_in_memory().unwrap();
         conn.execute_batch(
             "
             CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
             INSERT INTO test (name, value) VALUES ('test1', 1.1);
             INSERT INTO test (name, value) VALUES ('test2', 2.2);
         ",
-        )?;
+        )
+        .unwrap();
 
         DB_CONNECTION.get_or_init(|| Mutex::new(None));
-        if let Ok(mut guard) = DB_CONNECTION.get().unwrap().lock() {
-            *guard = Some(conn);
-        }
-        Ok(())
+        let mut guard = DB_CONNECTION.get().unwrap().lock().unwrap();
+        *guard = Some(conn);
     }
 
     #[test]
     fn test_connect_and_query() {
-        setup_test_db().unwrap();
+        setup_test_db();
 
         let result = execute_query("SELECT * FROM test ORDER BY id").unwrap();
 
@@ -126,7 +123,7 @@ mod tests {
 
     #[test]
     fn test_query_error() {
-        setup_test_db().unwrap();
+        setup_test_db();
 
         let result = execute_query("SELECT * FROM nonexistent_table");
         assert!(result.is_err());
@@ -134,12 +131,8 @@ mod tests {
 
     #[test]
     fn test_null_and_blob_handling() {
-        setup_test_db().unwrap();
-
-        let conn_guard = DB_CONNECTION.get().unwrap().lock().unwrap();
-        let conn = conn_guard.as_ref().unwrap();
-        conn.execute("INSERT INTO test (name, value) VALUES (NULL, NULL)", [])
-            .unwrap();
+        setup_test_db();
+        execute_query("INSERT INTO test (name, value) VALUES (NULL, NULL)").unwrap();
 
         let result = execute_query("SELECT * FROM test WHERE name IS NULL").unwrap();
         assert_eq!(result.rows[0][1], "NULL");

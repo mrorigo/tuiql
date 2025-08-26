@@ -3,7 +3,7 @@
 // This module provides an implementation for rendering tabular results in the terminal.
 // It includes features like virtualized rendering for large datasets, sticky headers, and export functionality.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 /// Represents a single cell in the grid.
 #[derive(Debug, Clone, PartialEq)]
