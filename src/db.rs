@@ -31,13 +31,26 @@ pub struct Schema {
     pub tables: HashMap<String, Table>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum TransactionState {
+    Autocommit,
+    Transaction,
+    Failed,
+}
+
+impl Default for TransactionState {
+    fn default() -> Self {
+        TransactionState::Autocommit
+    }
+}
+
+pub(crate) static DB_STATE: OnceCell<Mutex<DbState>> = OnceCell::new();
 #[derive(Debug)]
 pub struct DbState {
     pub connection: Option<Connection>,
     pub current_path: Option<String>,
+    pub transaction_state: TransactionState,
 }
-
-pub(crate) static DB_STATE: OnceCell<Mutex<DbState>> = OnceCell::new();
 
 #[derive(Debug)]
 pub struct QueryResult {
@@ -86,6 +99,7 @@ pub fn connect(db_path: &str) -> Result<(), String> {
                 Mutex::new(DbState {
                     connection: None,
                     current_path: None,
+                    transaction_state: TransactionState::default(),
                 })
             });
 
@@ -104,9 +118,28 @@ pub fn connect(db_path: &str) -> Result<(), String> {
 /// Executes a SQL query and returns the results.
 pub fn execute_query(sql: &str) -> Result<QueryResult, String> {
     let state_cell = DB_STATE.get().ok_or("No database connection")?;
-    let state_guard = state_cell
+    let mut state_guard = state_cell
         .lock()
         .map_err(|_| "Failed to acquire connection lock")?;
+
+    // Update transaction state based on SQL command
+    let sql_upper = sql.trim().to_uppercase();
+    if sql_upper == "BEGIN" || sql_upper == "BEGIN TRANSACTION" {
+        if state_guard.transaction_state != TransactionState::Autocommit {
+            return Err("Transaction already in progress".to_string());
+        }
+        state_guard.transaction_state = TransactionState::Transaction;
+    } else if sql_upper == "COMMIT" {
+        if state_guard.transaction_state != TransactionState::Transaction {
+            return Err("No transaction in progress".to_string());
+        }
+        state_guard.transaction_state = TransactionState::Autocommit;
+    } else if sql_upper == "ROLLBACK" {
+        if state_guard.transaction_state != TransactionState::Transaction {
+            return Err("No transaction in progress".to_string());
+        }
+        state_guard.transaction_state = TransactionState::Autocommit;
+    }
     let conn = state_guard
         .connection
         .as_ref()
@@ -241,51 +274,51 @@ pub fn get_schema() -> Result<Schema, String> {
 pub(crate) mod tests {
     use super::*;
 
-    pub fn setup_test_db() -> Connection {
-        let conn = Connection::open_in_memory().unwrap();
-        // Reset the database to ensure we have exactly 2 rows
-        conn.execute_batch(
-            "
-            CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
-            CREATE INDEX idx_test_name ON test(name);
-            CREATE UNIQUE INDEX idx_test_value ON test(value);
-            DELETE FROM test;
-            INSERT INTO test (name, value) VALUES ('test1', 1.1);
-            INSERT INTO test (name, value) VALUES ('test2', 2.2);
-        ",
-        )
-        .unwrap();
-
-        // Initialize the connection singleton
+    pub fn setup_test_db() {
+        // Initialize the connection singleton first
         DB_STATE.get_or_init(|| {
+            let conn = Connection::open_in_memory().unwrap();
+            // Reset the database to ensure we have exactly 2 rows
+            conn.execute_batch(
+                "
+                CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
+                CREATE INDEX idx_test_name ON test(name);
+                CREATE UNIQUE INDEX idx_test_value ON test(value);
+                INSERT INTO test (name, value) VALUES ('test1', 1.1);
+                INSERT INTO test (name, value) VALUES ('test2', 2.2);
+            ",
+            )
+            .unwrap();
+
             Mutex::new(DbState {
-                connection: None,
-                current_path: None,
+                connection: Some(conn),
+                current_path: Some(":memory:".to_string()),
+                transaction_state: TransactionState::default(),
             })
         });
-
-        // Store the connection in our global state
-        {
-            let mut guard = DB_STATE.get().unwrap().lock().unwrap();
-            guard.connection = Some(conn);
-            guard.current_path = Some(":memory:".to_string());
-        }
-
-        // Open a new connection with the same configuration for returning
-        Connection::open_in_memory().unwrap()
     }
 
-    /// Helper function to set a test database connection
-    pub fn set_test_connection(conn: Connection) {
-        DB_STATE.get_or_init(|| {
-            Mutex::new(DbState {
-                connection: None,
-                current_path: None,
-            })
-        });
-        let mut guard = DB_STATE.get().unwrap().lock().unwrap();
-        guard.connection = Some(conn);
-        guard.current_path = Some(":memory:".to_string());
+    /// Helper function to reset the test database
+    pub fn reset_test_db() {
+        if let Ok(mut guard) = DB_STATE.get().unwrap().lock() {
+            if let Some(_conn) = guard.connection.take() {
+                // Create a new connection and reset the database
+                let new_conn = Connection::open_in_memory().unwrap();
+                new_conn
+                    .execute_batch(
+                        "
+                    CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
+                    CREATE INDEX idx_test_name ON test(name);
+                    CREATE UNIQUE INDEX idx_test_value ON test(value);
+                    INSERT INTO test (name, value) VALUES ('test1', 1.1);
+                    INSERT INTO test (name, value) VALUES ('test2', 2.2);
+                ",
+                    )
+                    .unwrap();
+                guard.connection = Some(new_conn);
+                guard.transaction_state = TransactionState::default();
+            }
+        }
     }
 
     #[test]
@@ -306,6 +339,41 @@ pub(crate) mod tests {
 
         let result = execute_query("SELECT * FROM nonexistent_table");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_transaction_management() {
+        setup_test_db();
+
+        // Start transaction
+        let result = execute_query("BEGIN");
+        assert!(result.is_ok());
+        let state = DB_STATE.get().unwrap().lock().unwrap();
+        assert_eq!(state.transaction_state, TransactionState::Transaction);
+        drop(state);
+
+        // Try starting another transaction (should fail)
+        let result = execute_query("BEGIN");
+        assert!(result.is_err());
+
+        // Commit transaction
+        let result = execute_query("COMMIT");
+        assert!(result.is_ok());
+        let state = DB_STATE.get().unwrap().lock().unwrap();
+        assert_eq!(state.transaction_state, TransactionState::Autocommit);
+        drop(state);
+
+        // Try committing without transaction (should fail)
+        let result = execute_query("COMMIT");
+        assert!(result.is_err());
+
+        // Start transaction and rollback
+        let result = execute_query("BEGIN");
+        assert!(result.is_ok());
+        let result = execute_query("ROLLBACK");
+        assert!(result.is_ok());
+        let state = DB_STATE.get().unwrap().lock().unwrap();
+        assert_eq!(state.transaction_state, TransactionState::Autocommit);
     }
 
     #[test]

@@ -90,6 +90,7 @@ mod tests {
     fn test_schema_navigator_render() {
         // Set up a clean test database
         db::tests::setup_test_db();
+        db::tests::reset_test_db();
 
         // Create and verify the navigator
         let navigator = SchemaNavigator::new().unwrap();
@@ -116,8 +117,12 @@ mod tests {
     #[test]
     fn test_schema_navigator_empty_db() {
         // Set up empty in-memory database
-        let conn = rusqlite::Connection::open_in_memory().unwrap();
-        db::tests::set_test_connection(conn);
+        db::tests::setup_test_db();
+        if let Ok(guard) = db::DB_STATE.get().unwrap().lock() {
+            if let Some(conn) = &guard.connection {
+                conn.execute("DROP TABLE IF EXISTS test", []).unwrap();
+            }
+        }
 
         // Create navigator and verify empty state
         let navigator = SchemaNavigator::new().unwrap();

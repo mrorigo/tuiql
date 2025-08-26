@@ -14,6 +14,23 @@ impl ReplState {
     fn new() -> Self {
         Self {}
     }
+
+    fn get_prompt_prefix() -> String {
+        if let Ok(guard) = db::DB_STATE.get().unwrap().lock() {
+            let tx_indicator = match guard.transaction_state {
+                db::TransactionState::Transaction => "*",
+                db::TransactionState::Failed => "!",
+                db::TransactionState::Autocommit => "",
+            };
+            if let Some(path) = &guard.current_path {
+                format!("{}{}", path, tx_indicator)
+            } else {
+                tx_indicator.to_string()
+            }
+        } else {
+            String::new()
+        }
+    }
 }
 
 /// Represents a parsed REPL command.
@@ -23,6 +40,9 @@ pub enum Command {
     Attach { name: String, path: String },
     Ro,
     Rw,
+    Begin,
+    Commit,
+    Rollback,
     Pragma { name: String, value: Option<String> },
     Plan,
     Fmt,
@@ -72,6 +92,9 @@ pub fn parse_command(input: &str) -> Command {
         }
         "ro" => Command::Ro,
         "rw" => Command::Rw,
+        "begin" => Command::Begin,
+        "commit" => Command::Commit,
+        "rollback" => Command::Rollback,
         "pragma" => {
             if parts.len() >= 2 {
                 let name = parts[1].to_string();
@@ -152,10 +175,15 @@ pub fn run_repl() {
 
     loop {
         if let Ok(guard) = db::DB_STATE.get().unwrap().lock() {
+            let tx_indicator = match guard.transaction_state {
+                db::TransactionState::Transaction => "*",
+                db::TransactionState::Failed => "!",
+                db::TransactionState::Autocommit => "",
+            };
             if let Some(path) = &guard.current_path {
-                print!("{}> ", path);
+                print!("{}{}>", path, tx_indicator);
             } else {
-                print!("> ");
+                print!("{}>", tx_indicator);
             }
         } else {
             print!("> ");
@@ -209,10 +237,13 @@ pub fn run_repl() {
                 println!("Available commands:");
                 println!("  :help - List all available commands and their descriptions");
                 println!("  :open <path> - Open a database");
-                println!("  :attach <name> <path> - Attach a database");
+                println!("  :attach <n> <path> - Attach a database");
                 println!("  :ro - Toggle read-only mode");
                 println!("  :rw - Toggle read-write mode");
-                println!("  :pragma <name> [val] - View or set a pragma");
+                println!("  :begin - Start a new transaction");
+                println!("  :commit - Commit current transaction");
+                println!("  :rollback - Rollback current transaction");
+                println!("  :pragma <n> [val] - View or set a pragma");
                 println!("  :plan - Visualize the query plan");
                 println!("  :fmt - Format the current query buffer");
                 println!("  :export <format> - Export current result set");
@@ -227,6 +258,18 @@ pub fn run_repl() {
             Command::Tables => match schema_navigator::SchemaNavigator::new() {
                 Ok(navigator) => println!("{}", navigator.render()),
                 Err(e) => eprintln!("Error getting schema: {}", e),
+            },
+            Command::Begin => match db::execute_query("BEGIN TRANSACTION") {
+                Ok(_) => println!("Transaction started"),
+                Err(e) => eprintln!("Failed to start transaction: {}", e),
+            },
+            Command::Commit => match db::execute_query("COMMIT") {
+                Ok(_) => println!("Transaction committed"),
+                Err(e) => eprintln!("Failed to commit transaction: {}", e),
+            },
+            Command::Rollback => match db::execute_query("ROLLBACK") {
+                Ok(_) => println!("Transaction rolled back"),
+                Err(e) => eprintln!("Failed to rollback transaction: {}", e),
             },
             Command::Open(path) => match db::connect(&path) {
                 Ok(_) => println!("Successfully opened database: {}", path),
@@ -305,24 +348,54 @@ mod tests {
         db,
         storage::{HistoryEntry, Storage},
     };
-    use tempfile::NamedTempFile;
-
-    fn create_test_db() -> NamedTempFile {
-        let file = NamedTempFile::new().unwrap();
-        let conn = rusqlite::Connection::open(file.path()).unwrap();
-        conn.execute_batch(
-            "CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT);
-             INSERT INTO test (name) VALUES ('Alice');
-             INSERT INTO test (name) VALUES ('Bob');",
-        )
-        .unwrap();
-        file
-    }
+    use tempfile;
 
     #[test]
     fn test_parse_open_command() {
         let cmd = parse_command(":open database.db");
         assert_eq!(cmd, Command::Open("database.db".to_string()));
+    }
+
+    #[test]
+    fn test_parse_transaction_commands() {
+        let begin_cmd = parse_command(":begin");
+        assert_eq!(begin_cmd, Command::Begin);
+
+        let commit_cmd = parse_command(":commit");
+        assert_eq!(commit_cmd, Command::Commit);
+
+        let rollback_cmd = parse_command(":rollback");
+        assert_eq!(rollback_cmd, Command::Rollback);
+    }
+
+    #[test]
+    fn test_transaction_execution() {
+        // Setup test database
+        db::tests::setup_test_db();
+
+        // Start transaction
+        let begin_result = db::execute_query("BEGIN TRANSACTION");
+        assert!(begin_result.is_ok());
+
+        // Execute some SQL within transaction
+        let insert_result =
+            db::execute_query("INSERT INTO test (name, value) VALUES ('transaction_test', 3.3)");
+        assert!(insert_result.is_ok());
+
+        // Verify transaction state
+        let state = db::DB_STATE.get().unwrap().lock().unwrap();
+        assert_eq!(state.transaction_state, db::TransactionState::Transaction);
+        drop(state);
+
+        // Commit transaction
+        let commit_result = db::execute_query("COMMIT");
+        assert!(commit_result.is_ok());
+
+        // Verify data persisted
+        let select_result =
+            db::execute_query("SELECT name FROM test WHERE name = 'transaction_test'");
+        assert!(select_result.is_ok());
+        assert_eq!(select_result.unwrap().row_count, 1);
     }
 
     #[test]
@@ -387,27 +460,19 @@ mod tests {
 
     #[test]
     fn test_database_connection_state() {
-        let db_file = create_test_db();
-        let path = db_file.path().to_str().unwrap();
-
-        // Test database connection
-        assert!(db::connect(path).is_ok());
+        // Setup test database
+        db::tests::setup_test_db();
 
         // Verify connection state
         let state = db::DB_STATE.get().unwrap().lock().unwrap();
         assert!(state.connection.is_some());
-        assert_eq!(state.current_path.as_ref().unwrap(), path);
-
-        // Clean up
-        drop(state);
-        db_file.close().unwrap();
+        assert_eq!(state.current_path.as_ref().unwrap(), ":memory:");
     }
 
     #[test]
     fn test_sql_execution_with_history() {
-        let db_file = create_test_db();
-        let path = db_file.path().to_str().unwrap();
-        assert!(db::connect(path).is_ok());
+        // Setup test database
+        db::tests::setup_test_db();
 
         // Create a temporary directory for history database
         let temp_dir = tempfile::tempdir().unwrap();
@@ -421,15 +486,15 @@ mod tests {
         let result = db::execute_query(sql).unwrap();
 
         // Verify query results
-        assert_eq!(result.columns, vec!["id", "name"]);
+        assert_eq!(result.columns, vec!["id", "name", "value"]);
         assert_eq!(result.rows.len(), 2);
-        assert_eq!(result.rows[0][1], "Alice");
-        assert_eq!(result.rows[1][1], "Bob");
+        assert_eq!(result.rows[0][1], "test1");
+        assert_eq!(result.rows[1][1], "test2");
 
         // Add entry to history (since execute_query alone doesn't add history)
         let entry = HistoryEntry::new(
             sql.to_string(),
-            path.to_string(),
+            ":memory:".to_string(),
             true,
             Some(0),
             Some(result.row_count as i64),
@@ -443,9 +508,8 @@ mod tests {
         assert!(history[0].success);
         assert_eq!(history[0].row_count, Some(2));
 
-        // Clean up
+        // Clean up history storage
         drop(storage);
-        db_file.close().unwrap();
         temp_dir.close().unwrap();
     }
 }

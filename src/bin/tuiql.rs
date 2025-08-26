@@ -1,10 +1,6 @@
 use tracing::info;
 use tracing_subscriber;
-use tuiql::{
-    command_palette,
-    db::{self},
-    repl, schema_navigator,
-};
+use tuiql::{db, repl};
 
 fn main() {
     // Initialize the logging system using tracing subscriber
@@ -43,7 +39,6 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tuiql::command_palette::CommandPalette;
 
     #[test]

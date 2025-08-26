@@ -13,6 +13,7 @@ This document tracks the current status of the TUIQL project, including complete
 
 - **Repository Setup:** ✅ Completed
 - **Database Connection Implementation:** ✅ Completed
+- **Transaction Management:** ✅ Completed
 - **Initial Directory Structure:** ✅ Completed
 - **Basic Documentation:** ✅ Completed
 - **CLI Stub:** ✅ Completed
@@ -25,6 +26,7 @@ This document tracks the current status of the TUIQL project, including complete
 - **Schema Map Stub:** ✅ Completed
 - **Query History:** ✅ Completed (Added persistent storage for query history with timestamps and metadata)
 - **Database Path Display:** ✅ Completed (Added current database path display in REPL prompt)
+- **Transaction Management:** ✅ Completed (Added BEGIN/COMMIT/ROLLBACK support with state tracking and safety checks)
 - **Query Editor Enhancements:** ✅ Completed: Expanded linting rules for dangerous operations and improved query formatting capabilities.
 - **Schema Navigator Implementation:** ✅ Completed
 - **Plan Visualizer Enhancements:** ✅ Completed
@@ -46,6 +48,7 @@ This document tracks the current status of the TUIQL project, including complete
     - Query history storage tests added
     - Schema navigation tests completed
     - Error handling tests for database connections and queries
+    - Transaction management tests implemented
   - **Ongoing Work:**
     - Implementing golden tests for TUI components
 
@@ -76,6 +79,11 @@ This document tracks the current status of the TUIQL project, including complete
    - Implemented persistent storage for query history ✅ Completed
    - Added execution time tracking ✅ Completed
    - Added success/failure status tracking ✅ Completed
+4. **Transaction Management:**
+   - Added BEGIN/COMMIT/ROLLBACK commands ✅ Completed
+   - Implemented transaction state tracking ✅ Completed
+   - Added transaction status display in prompt ✅ Completed
+   - Added safety checks for nested transactions ✅ Completed
 
 3. **Results Grid:**
    - Add support for inline JSON tree views and type-aware cell rendering.
