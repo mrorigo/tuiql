@@ -11,9 +11,9 @@ This document tracks the current status of the TUIQL project, including complete
 
 ### Milestone: **M2: Advanced Features (IN PROGRESS)**
 - ✅ **Schema Map Visualization:** Full ER diagram implementation with foreign key relationships and ASCII visualization
+- ✅ **JSON1 Helper Implementation:** Complete JSON1 extension helpers with query builders, validation, and REPL integration
 - 🎯 **Remaining M2 Features:**
   - FTS5 helper implementation
-  - JSON1 helper implementation
   - Database diff functionality
   - Cancellable query support
   - Configuration system

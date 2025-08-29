@@ -66,6 +66,7 @@ const SQL_KEYWORDS: &[&str] = &[
 
 /// SQLite functions that are commonly used
 const SQL_FUNCTIONS: &[&str] = &[
+/// JSON1 Extension Functions
     "ABS",
     "AVG",
     "COUNT",
@@ -106,6 +107,16 @@ const SQL_FUNCTIONS: &[&str] = &[
     "JSON_EXTRACT",
     "JSON_TYPE",
     "JSON_VALID",
+    "JSON_EACH",
+    "JSON_TREE",
+    "JSON_PRETTY",
+    "JSON_GROUP_ARRAY",
+    "JSON_GROUP_OBJECT",
+    "JSON_PATCH",
+    "JSON_REMOVE",
+    "JSON_REPLACE",
+    "JSON_SET",
+    "JSON_INSERT",
     "FTS5",
     "MATCH",
     "RANK",
@@ -238,6 +249,10 @@ impl SqlCompleter {
             CompletionContext::Fts5MatchQuery
         } else if self.is_fts5_function_context(before_cursor) {
             CompletionContext::Fts5Functions
+        } else if self.is_json_query_context(before_cursor) {
+            CompletionContext::JsonQuery
+        } else if self.is_json_path_context(before_cursor) {
+            CompletionContext::JsonPath
         } else if self.is_after_from(before_cursor) {
             CompletionContext::TableName
         } else if self.is_after_select(before_cursor) {
@@ -342,6 +357,28 @@ impl SqlCompleter {
         text_upper.contains("BM25")
     }
 
+    /// Detects if we're in JSON_EXTRACT or similar JSON function context
+    fn is_json_query_context(&self, text: &str) -> bool {
+        let text_upper = text.to_uppercase();
+        // Check for JSON function names
+        text_upper.contains("JSON_EXTRACT") ||
+        text_upper.contains("JSON_TYPE") ||
+        text_upper.contains("JSON_VALID") ||
+        text_upper.contains("JSON_PRETTY")
+    }
+
+    /// Detects if we're in JSON path expression context
+    fn is_json_path_context(&self, text: &str) -> bool {
+        let text_upper = text.to_uppercase();
+        // Check for JSON path operators in brackets or after comma
+        text_upper.contains("JSON_EXTRACT(") ||
+        (text_upper.contains("'$.") || text_upper.contains("\"$.")) ||
+        text_upper.contains("$.") && (
+            text_upper.contains(",") ||
+            text_upper.contains("(")
+        )
+    }
+
     /// Generates suggestions based on context and prefix
     fn get_suggestions(&self, context: &CompletionContext, prefix: &str) -> Vec<String> {
         let mut suggestions = Vec::new();
@@ -404,6 +441,14 @@ impl SqlCompleter {
                         .collect();
                     suggestions.extend(self.filter_keywords(&fts5_tables, prefix));
                 }
+            }
+            CompletionContext::JsonQuery => {
+                // Suggest JSON path operators and functions
+                suggestions.extend(self.filter_keywords(JSON1_OPERATORS, prefix));
+            }
+            CompletionContext::JsonPath => {
+                // Suggest common JSON path patterns
+                suggestions.extend(self.filter_keywords(&["$?", "$:", "$[]", "$[*]", "$[*].field"], prefix));
             }
         }
 
@@ -470,6 +515,23 @@ const FTS5_OPERATORS: &[&str] = &[
     "STAR",          // Prefix wildcard
 ];
 
+/// JSON1-specific path operators for completion
+const JSON1_OPERATORS: &[&str] = &[
+    "$",          // Root path
+    "#",          // Array length
+    ".",          // Child operator
+    "[n]",        // Array index
+    "*",          // Wildcard
+    "**",         // Recursive descent
+    "=~",         // Regular expression match
+    "===",        // Strict equality
+    "!===",       // Strict inequality
+    ">",          // Greater than
+    "<",          // Less than
+    ">=",         // Greater than or equal
+    "<=",         // Less than or equal
+];
+
 /// Represents different contexts where completion can occur
 #[derive(Debug, Clone)]
 enum CompletionContext {
@@ -482,6 +544,8 @@ enum CompletionContext {
     Fts5TokenizerSpec,    // TOKENIZE = porter, etc.
     Fts5MatchQuery,       // WHERE table_name MATCH '...'
     Fts5Functions,        // highlight(), snippet(), bm25()
+    JsonQuery,            // JSON_EXTRACT(expr, path)
+    JsonPath,             // JSON path expressions
 }
 
 #[cfg(test)]

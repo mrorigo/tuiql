@@ -48,8 +48,8 @@ crates/
 
 ### M2: Advanced Features
 - [x] Schema map visualization ✅ COMPLETED
+- [x] JSON1 helper implementation ✅ COMPLETED
 - [ ] FTS5 helper implementation
-- [ ] JSON1 helper implementation
 - [ ] Database diff functionality
 - [ ] Cancellable query support
 - [ ] Configuration system
@@ -117,5 +117,6 @@ crates/
 - [x] Test Suite Improvements and Concurrency Issue Resolution
 - [x] Major M1 Feature Completion
 - [x] Schema Map Visualization (M2) - Complete ER diagram implementation with foreign key relationships
+- [x] JSON1 Helper Implementation (M2) - Complete JSON1 extension helpers with query builders, REPL integration, and comprehensive tests
 
 This plan will evolve as the project grows. Continuous improvements and adaptations will be made to meet the project's objectives and timelines.

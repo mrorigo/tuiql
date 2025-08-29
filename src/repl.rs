@@ -1,7 +1,7 @@
 use crate::{
     db, schema_navigator, schema_map,
     storage::{HistoryEntry, Storage},
-    plan, fts5,
+    plan, fts5, json1,
 };
 use dirs::data_dir;
 use std::io::{self, Write};
@@ -51,6 +51,7 @@ pub enum Command {
     Find(String),
     Erd(Option<String>),
     Fts5(Option<String>),
+    Json1(Option<String>),
     Hist,
     Snip(String),
     Diff { db_a: String, db_b: String },
@@ -138,6 +139,13 @@ pub fn parse_command(input: &str) -> Command {
                 Command::Fts5(Some(parts[1].to_string()))
             } else {
                 Command::Fts5(None)
+            }
+        }
+        "json1" => {
+            if parts.len() >= 2 {
+                Command::Json1(Some(parts[1].to_string()))
+            } else {
+                Command::Json1(None)
             }
         }
         "hist" => Command::Hist,
@@ -259,6 +267,7 @@ pub fn run_repl() {
                 println!("  :find <text> - 🔍 Search for text in the database schema or queries (coming soon!)");
                 println!("  :erd [table] - 📊 Show ER-diagram for the schema");
                 println!("  :fts5 [cmd] - 🔍 FTS5 full-text search helper");
+                println!("  :json1 [cmd] - 🎯 JSON1 extension helper");
                 println!("  :hist - Show command/query history");
                 println!("  :snip <action> - 💾 Manage query snippets (coming soon!)");
                 println!("  :diff <dbA> <dbB> - 🔄 Perform a schema diff between databases (coming soon!)");
@@ -423,6 +432,19 @@ pub fn run_repl() {
                             println!("❓ Unknown FTS5 command: '{}'", cmd);
                             println!("Available :fts5 commands: help (default), list, create, populate, search");
                         }
+                    }
+                }
+            }
+            Command::Json1(action) => {
+                match action {
+                    Some(subcommand) if !subcommand.is_empty() => {
+                        match json1::execute_json1_command(&subcommand) {
+                            Ok(_) => {},
+                            Err(e) => println!("❌ Error executing JSON1 command: {}", e),
+                        }
+                    }
+                    _ => {
+                        println!("{}", json1::json1_help());
                     }
                 }
             }

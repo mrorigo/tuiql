@@ -7,6 +7,7 @@ pub mod command_palette;
 pub mod db;
 pub mod diff;
 pub mod fts5;
+pub mod json1;
 pub mod json_viewer;
 pub mod plan;
 pub mod query_editor;
