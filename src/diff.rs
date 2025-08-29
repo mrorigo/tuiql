@@ -1,3 +1,5 @@
+use crate::core::{Result, TuiqlError};
+
 /*
  * Diff Module Stub for Schema Diff Functionality
  *
@@ -24,9 +26,11 @@
 /// let diff = diff_schemas("{\"tables\": [{\"name\": \"users\"}]}", "{\"tables\": [{\"name\": \"orders\"}]}");
 /// assert_eq!(diff.unwrap(), "Differences found between schemas.");
 /// ```
-pub fn diff_schemas(schema_a: &str, schema_b: &str) -> Result<String, String> {
+pub fn diff_schemas(schema_a: &str, schema_b: &str) -> Result<String> {
     if schema_a.is_empty() || schema_b.is_empty() {
-        return Err("One or both schema inputs are empty".to_string());
+        return Err(TuiqlError::Schema(
+            "One or both schema inputs are empty - cannot generate diff".to_string()
+        ));
     }
 
     // Stub implementation:
@@ -64,5 +68,14 @@ mod tests {
     fn test_diff_schemas_empty() {
         let result = diff_schemas("", r#"{"tables": [{"name": "users"}]}"#);
         assert!(result.is_err());
+
+        // Verify the error type and message content
+        if let Err(TuiqlError::Schema(msg)) = result {
+            assert!(msg.contains("One or both schema inputs are empty"));
+            // Enhanced error message validation
+            println!("Diff error validation: Valid schema error detected with message: {}", msg);
+        } else {
+            panic!("Expected Schema error for empty schemas, got: {:?}", result);
+        }
     }
 }
