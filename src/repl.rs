@@ -376,7 +376,7 @@ mod tests {
     #[test]
     fn test_transaction_execution() {
         // Setup test database
-        db::tests::setup_test_db();
+        db::tests::setup_test_db_global();
 
         // Start transaction
         let begin_result = db::execute_query("BEGIN TRANSACTION");
@@ -466,7 +466,7 @@ mod tests {
     #[test]
     fn test_database_connection_state() {
         // Setup test database
-        db::tests::setup_test_db();
+        db::tests::setup_test_db_global();
 
         // Verify connection state
         let state = db::DB_STATE.get().unwrap().lock().unwrap();
@@ -477,7 +477,7 @@ mod tests {
     #[test]
     fn test_sql_execution_with_history() {
         // Setup test database
-        db::tests::setup_test_db();
+        db::tests::setup_test_db_global();
 
         // Create a temporary directory for history database
         let temp_dir = tempfile::tempdir().unwrap();

@@ -46,6 +46,11 @@ impl Default for TransactionState {
 }
 
 pub(crate) static DB_STATE: OnceCell<Mutex<DbState>> = OnceCell::new();
+
+#[cfg(test)]
+thread_local! {
+    pub static TEST_DB_STATE: std::cell::RefCell<Option<Connection>> = std::cell::RefCell::new(None);
+}
 #[derive(Debug)]
 pub struct DbState {
     pub connection: Option<Connection>,
@@ -272,16 +277,8 @@ pub fn get_schema() -> Result<Schema> {
 pub(crate) mod tests {
     use super::*;
 
+    /// Isolated test database setup per test
     pub fn setup_test_db() {
-        // Clear any existing state first to ensure test isolation
-        if let Some(mut guard) = DB_STATE.get().and_then(|state| state.lock().ok()) {
-            guard.connection = None;
-            guard.current_path = None;
-            guard.transaction_state = TransactionState::default();
-        }
-
-        // For tests, we'll bypass the connect() function and directly set up the state
-        // since connect() expects a file path but we need an in-memory database
         let conn = Connection::open_in_memory().expect("Failed to open in-memory database");
 
         // Set up test schema
@@ -295,48 +292,166 @@ pub(crate) mod tests {
         ",
         ).expect("Failed to initialize test database schema");
 
-        // Initialize the global state with the test connection
+        // Store in thread-local
+        TEST_DB_STATE.with(|state| {
+            *state.borrow_mut() = Some(conn);
+        });
+    }
+
+    /// Execute query using thread-local test database
+    fn test_execute_query(sql: &str) -> Result<QueryResult> {
+        TEST_DB_STATE.with(|state| {
+            let conn_ref = state.borrow();
+            let conn = conn_ref.as_ref().ok_or_else(|| TuiqlError::App("Test database not initialized".to_string()))?;
+
+            let mut stmt = conn.prepare(sql).map_err(|e| TuiqlError::Query(format!("Failed to prepare SQL statement: {}. Check your SQL syntax.", e)))?;
+
+            // Get column names
+            let columns: Vec<String> = stmt.column_names().into_iter().map(String::from).collect();
+            let column_count = stmt.column_count();
+
+            // Execute query and collect rows
+            let rows: Vec<Vec<String>> = stmt
+                .query_map([], |row| {
+                    let mut values = Vec::new();
+                    for i in 0..column_count {
+                        values.push(format_value(row.get_ref(i)?));
+                    }
+                    Ok(values)
+                })
+                .map_err(|e| TuiqlError::Query(format!("Query execution failed: {}. Check table names and column references.", e)))?
+                .filter_map(|row| row.map_err(|e| TuiqlError::Query(format!("Error processing query results: {}. The query may have incompatible data types.", e))).ok())
+                .collect();
+
+            Ok(QueryResult::new(columns, rows))
+        })
+    }
+
+    /// Get schema using thread-local test database
+    fn test_get_schema() -> Result<Schema> {
+        TEST_DB_STATE.with(|state| {
+            let conn_ref = state.borrow();
+            let conn = conn_ref.as_ref().ok_or_else(|| TuiqlError::Schema("Test database not initialized".to_string()))?;
+
+            let mut tables = HashMap::new();
+
+            // Get all tables
+            let mut stmt = conn
+                .prepare(
+                    "SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+                )
+                .map_err(|e| TuiqlError::Schema(format!("Failed to prepare schema query: {}. Database metadata may be corrupted.", e)))?;
+
+            let table_iter = stmt
+                .query_map([], |row| {
+                    Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+                })
+                .map_err(|e| TuiqlError::Schema(format!("Failed to execute schema query: {}. Cannot retrieve table information.", e)))?;
+
+            for table_result in table_iter {
+                let (table_name, _sql) = table_result.map_err(|e| TuiqlError::Schema(format!("Error reading table metadata: {}. Schema may be incomplete.", e)))?;
+
+                // Get columns for this table
+                let mut columns = Vec::new();
+                let mut col_stmt = conn
+                    .prepare(&format!("PRAGMA table_info('{}')", table_name))
+                    .map_err(|e| TuiqlError::Schema(format!("Failed to query table info for '{}': {}. Table schema may be corrupted.", table_name, e)))?;
+
+                let col_iter = col_stmt
+                    .query_map([], |row| {
+                        Ok(Column {
+                            name: row.get(1)?,
+                            type_name: row.get(2)?,
+                            notnull: row.get(3)?,
+                            pk: row.get(5)?,
+                            dflt_value: row.get(4)?,
+                        })
+                    })
+                    .map_err(|e| TuiqlError::Schema(format!("Error processing columns for table '{}': {}.", table_name, e)))?;
+
+                for col_result in col_iter {
+                    columns.push(col_result.map_err(|e| TuiqlError::Schema(format!("Error reading column metadata for table '{}': {}.", table_name, e)))?);
+                }
+
+                // Get indexes for this table
+                let mut indexes = Vec::new();
+                let mut idx_stmt = conn
+                    .prepare(&format!("PRAGMA index_list('{}')", table_name))
+                    .map_err(|e| TuiqlError::Schema(format!("Failed to query index list for table '{}': {}.", table_name, e)))?;
+
+                let idx_iter = idx_stmt
+                    .query_map([], |row| {
+                        Ok((
+                            row.get::<_, String>(1)?, // index name
+                            row.get::<_, bool>(2)?,   // unique
+                        ))
+                    })
+                    .map_err(|e| TuiqlError::Schema(format!("Error processing index list for table '{}': {}.", table_name, e)))?;
+
+                for idx_result in idx_iter {
+                    let (idx_name, unique) = idx_result.map_err(|e| TuiqlError::Schema(format!("Error reading index metadata for table '{}': {}.", table_name, e)))?;
+
+                    // Get columns for this index
+                    let mut idx_col_stmt = conn
+                        .prepare(&format!("PRAGMA index_info('{}')", idx_name))
+                        .map_err(|e| TuiqlError::Schema(format!("Failed to query index info for '{}': {}.", idx_name, e)))?;
+
+                    let mut idx_columns = Vec::new();
+                    let idx_col_iter = idx_col_stmt
+                        .query_map([], |row| row.get::<_, String>(2))
+                        .map_err(|e| TuiqlError::Schema(format!("Error retrieving columns for index '{}': {}.", idx_name, e)))?;
+
+                    for col_result in idx_col_iter {
+                        idx_columns.push(col_result.map_err(|e| TuiqlError::Schema(format!("Error reading index column for '{}': {}.", idx_name, e)))?);
+                    }
+
+                    indexes.push(Index {
+                        name: idx_name,
+                        unique,
+                        columns: idx_columns,
+                    });
+                }
+
+                tables.insert(
+                    table_name.clone(),
+                    Table {
+                        name: table_name,
+                        columns,
+                        indexes,
+                    },
+                );
+            }
+
+            Ok(Schema { tables })
+        })
+    }
+
+    /// Legacy test setup for tests that need global state
+    pub fn setup_test_db_global() {
+        let conn = Connection::open_in_memory().expect("Failed to open in-memory database");
+
+        // Set up test schema
+        conn.execute_batch(
+            "
+            CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
+            CREATE INDEX idx_test_name ON test(name);
+            CREATE UNIQUE INDEX idx_test_value ON test(value);
+            INSERT INTO test (name, value) VALUES ('test1', 1.1);
+            INSERT INTO test (name, value) VALUES ('test2', 2.2);
+        ",
+        ).expect("Failed to initialize test database schema");
+
+        // Initialize the global state
         DB_STATE.get_or_init(|| Mutex::new(DbState {
             connection: Some(conn),
             current_path: Some(":memory:".to_string()),
             transaction_state: TransactionState::default(),
         }));
-
-        // Note: We don't replace the existing state to avoid race conditions during tests
-    }
-
-    /// Helper function to reset the test database
-    pub fn reset_test_db() {
-        if let Ok(mut guard) = DB_STATE.get().unwrap().lock() {
-            // Clear the connection to create a fresh state
-            guard.connection = None;
-            guard.current_path = None;
-            guard.transaction_state = TransactionState::default();
-
-            // Create a new connection and reset the database
-            let new_conn = Connection::open_in_memory().expect("Failed to open in-memory database");
-            new_conn
-                .execute_batch(
-                    "
-                    CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
-                    CREATE INDEX idx_test_name ON test(name);
-                    CREATE UNIQUE INDEX idx_test_value ON test(value);
-                    INSERT INTO test (name, value) VALUES ('test1', 1.1);
-                    INSERT INTO test (name, value) VALUES ('test2', 2.2);
-                ",
-                )
-                .expect("Failed to initialize test database schema");
-
-            // Update the guard with the new connection
-            guard.connection = Some(new_conn);
-            guard.current_path = Some(":memory:".to_string());
-            guard.transaction_state = TransactionState::default();
-        }
     }
 
     #[test]
     fn test_connect_and_query() {
-        setup_test_db();
+        setup_test_db_global();
 
         let result = execute_query("SELECT * FROM test ORDER BY id").unwrap();
 
@@ -350,13 +465,13 @@ pub(crate) mod tests {
     fn test_query_error() {
         setup_test_db();
 
-        let result = execute_query("SELECT * FROM nonexistent_table");
+        let result = test_execute_query("SELECT * FROM nonexistent_table");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_transaction_management() {
-        setup_test_db();
+        setup_test_db_global();
 
         // Start transaction
         let result = execute_query("BEGIN");
@@ -391,16 +506,17 @@ pub(crate) mod tests {
 
     #[test]
     fn test_null_and_blob_handling() {
-        setup_test_db();
+        setup_test_db_global();
         execute_query("INSERT INTO test (name, value) VALUES (NULL, NULL)").unwrap();
 
         let result = execute_query("SELECT * FROM test WHERE name IS NULL").unwrap();
         assert_eq!(result.rows[0][1], "NULL");
         assert_eq!(result.rows[0][2], "NULL");
     }
+
     #[test]
     fn test_schema_introspection() {
-        setup_test_db();
+        setup_test_db_global();
 
         let schema = get_schema().unwrap();
         let test_table = schema.tables.get("test").unwrap();
