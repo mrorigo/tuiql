@@ -1,7 +1,9 @@
-// Results Grid Module for TUIQL
-//
-// This module provides an implementation for rendering tabular results in the terminal.
-// It includes features like virtualized rendering for large datasets, sticky headers, and export functionality.
+use crate::core::{Result, TuiqlError};
+
+/// Results Grid Module for TUIQL
+///
+/// This module provides an implementation for rendering tabular results in the terminal.
+/// It includes features like virtualized rendering for large datasets, sticky headers, and export functionality.
 
 use std::collections::BTreeMap;
 
@@ -117,16 +119,19 @@ impl ResultsGrid {
 
     /// Exports the grid data to a specified format.
     /// Supported formats: CSV, JSON, Markdown.
-    pub fn export(&self, format: &str) -> Result<String, String> {
+    pub fn export(&self, format: &str) -> Result<String> {
         match format.to_lowercase().as_str() {
             "csv" => self.export_to_csv(),
             "json" => self.export_to_json(),
             "markdown" => self.export_to_markdown(),
-            _ => Err("Unsupported export format".to_string()),
+            _ => Err(TuiqlError::Ui(format!(
+                "Unsupported export format: '{}'. Supported formats: csv, json, markdown",
+                format
+            ))),
         }
     }
 
-    fn export_to_csv(&self) -> Result<String, String> {
+    fn export_to_csv(&self) -> Result<String> {
         let mut output = String::new();
         if !self.headers.is_empty() {
             output.push_str(&self.headers.join(","));
@@ -141,7 +146,7 @@ impl ResultsGrid {
         Ok(output)
     }
 
-    fn export_to_json(&self) -> Result<String, String> {
+    fn export_to_json(&self) -> Result<String> {
         let mut rows = Vec::new();
         for row in &self.rows {
             let mut row_map = BTreeMap::new();
@@ -152,10 +157,11 @@ impl ResultsGrid {
             }
             rows.push(row_map);
         }
-        serde_json::to_string(&rows).map_err(|e| e.to_string())
+        // serde_json error will automatically convert due to From trait in TuiqlError
+        serde_json::to_string(&rows).map_err(|e| TuiqlError::Json(e))
     }
 
-    fn export_to_markdown(&self) -> Result<String, String> {
+    fn export_to_markdown(&self) -> Result<String> {
         let mut output = String::new();
         if !self.headers.is_empty() {
             output.push_str(&self.headers.join(" | "));
@@ -223,6 +229,21 @@ mod tests {
         assert!(json.contains(r#""Name":"Alice""#));
         assert!(json.contains(r#""ID":"2""#));
         assert!(json.contains(r#""Name":"Bob""#));
+    }
+
+    #[test]
+    fn test_export_unsupported_format() {
+        let grid = ResultsGrid::new();
+        let result = grid.export("xml");
+        assert!(result.is_err());
+
+        // Check that it's a UI error with the expected message
+        if let Err(TuiqlError::Ui(msg)) = result {
+            assert!(msg.contains("Unsupported export format"));
+            assert!(msg.contains("xml"));
+        } else {
+            panic!("Expected UI error");
+        }
     }
     #[test]
     fn test_export_to_markdown() {
