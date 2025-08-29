@@ -1,12 +1,13 @@
-// Command Palette Stub Module for TUIQL
-// Command Palette Stub Module for TUIQL
-//
-// This module provides a basic implementation for a command palette,
-// which allows users to view available commands, filter them via fuzzy search,
-// and execute them. This is a stub implementation that simulates command handling.
-//
-// The palette maintains a list of commands with descriptions. In a real implementation,
-// the command execution may trigger various actions within the application.
+use crate::core::{Result, TuiqlError};
+
+/// Command Palette Stub Module for TUIQL
+///
+/// This module provides a basic implementation for a command palette,
+/// which allows users to view available commands, filter them via fuzzy search,
+/// and execute them. This is a stub implementation that simulates command handling.
+///
+/// The palette maintains a list of commands with descriptions. In a real implementation,
+/// the command execution may trigger various actions within the application.
 
 #[derive(Debug, Clone)]
 pub struct Command {
@@ -98,7 +99,7 @@ impl CommandPalette {
     /// Executes a command by name.
     /// In this stub implementation, execution simply returns a string message.
     /// Returns an error if the command is not found.
-    pub fn execute_command(&self, name: &str) -> Result<String, String> {
+    pub fn execute_command(&self, name: &str) -> Result<String> {
         if name == "help" {
             let help_text: String = self
                 .commands
@@ -118,7 +119,7 @@ impl CommandPalette {
                 ));
             }
         }
-        Err(format!("Command '{}' not found", name))
+        Err(TuiqlError::Command(format!("Command '{}' not found. Use 'help' to see available commands", name)))
     }
 }
 
@@ -159,5 +160,13 @@ mod tests {
         let palette = CommandPalette::new();
         let result = palette.execute_command("nonexistent");
         assert!(result.is_err());
+
+        // Verify it's a Command error with helpful message
+        if let Err(TuiqlError::Command(msg)) = result {
+            assert!(msg.contains("Command 'nonexistent' not found"));
+            assert!(msg.contains("Use 'help'"));
+        } else {
+            panic!("Expected Command error for nonexistent command");
+        }
     }
 }
