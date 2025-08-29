@@ -6,7 +6,8 @@ Welcome to TUIQL, a terminal-native SQLite client focused on efficiency and ease
 - 🔍 Comprehensive schema visualization with ER diagrams
 - 🔍 Full-text search with FTS5 support and advanced ranking
 - 📊 Query plan analysis and optimization insights
-- 🎯 Intelligent SQL auto-completion
+- 🎯 Intelligent SQL auto-completion with Tab completion
+- 🚀 Professional reedline interface with Ctrl+R history search
 - 📋 Database schema exploration with table relationships
 - ⚡ Real-time query performance analysis
 - 🔗 Transaction management and safety features
@@ -55,6 +56,24 @@ You can start TUIQL in two ways:
    ```
 
 ## Basic Usage
+
+### Reedline Interface Features
+
+TUIQL uses a professional reedline-powered interface with advanced editing capabilities:
+
+#### Keyboard Shortcuts
+- **Ctrl+R**: Reverse search through command history
+- **Tab**: Intelligent SQL auto-completion (keywords, tables, columns)
+- **↑/↓**: Navigate through command history
+- **→/←/Home/End**: Standard line editing navigation
+- **Ctrl+D**: Exit TUIQL (or type `:quit`)
+
+#### Persistent History
+TUIQL automatically maintains command history in `~/.tuiql/repl_history.txt`:
+- History persists between sessions
+- Search through your command history with Ctrl+R
+- Automatic storage of successful and failed queries
+- Performance metrics tracked for each query
 
 ### Connecting to a Database
 
@@ -212,8 +231,10 @@ Overlay the attached database onto the primary database, allowing cross-database
 ### General Usage
 1. **Always check connection status**: After opening a database, verify that the connection was successful.
 2. **Use read-only mode**: When you only need to query data, use `:ro` to prevent accidental modifications.
-3. **Command history**: Use the up and down arrow keys to navigate through previous commands.
-4. **Tab completion**: SQL queries support intelligent completion - press Tab for suggestions.
+3. **Command history**: Use the ↑/↓ arrow keys to navigate through previous commands.
+4. **Reverse history search**: Press Ctrl+R to search through your command history interactively.
+5. **Tab completion**: SQL queries support intelligent completion - press Tab for contextual suggestions (keywords, table names, column names).
+6. **Persistent sessions**: Your command history and performance metrics are automatically saved to `~/.tuiql/` and persist between sessions.
 
 ### Schema Exploration
 1. **Start with schema overview**: Use `:tables` to get a quick understanding of your database structure.
@@ -282,5 +303,6 @@ The following advanced features are currently being developed:
 🔍 **FTS5 Full-Text Search**: Comprehensive text search with BM25 ranking and highlighting
 📊 **Advanced Query Analysis**: Interactive query plan visualization
 🎯 **Enhanced REPL**: Intelligent completions and comprehensive help system
+🚶 **Reedline Professional Interface**: Full terminal editing with Ctrl+R history search, persistent storage, and advanced keyboard navigation
 
 Stay tuned for ongoing development updates! New features are being added regularly.
