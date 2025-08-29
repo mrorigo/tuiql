@@ -1,5 +1,5 @@
 use crate::{
-    db, schema_navigator,
+    db, schema_navigator, schema_map,
     storage::{HistoryEntry, Storage},
     plan,
 };
@@ -249,7 +249,7 @@ pub fn run_repl() {
                 println!("  :fmt - 🛠️ Format the current query buffer (coming soon!)");
                 println!("  :export <format> - 📤 Export current result set (coming soon!)");
                 println!("  :find <text> - 🔍 Search for text in the database schema or queries (coming soon!)");
-                println!("  :erd [table] - 📊 Show ER-diagram for the schema (coming soon!)");
+                println!("  :erd [table] - 📊 Show ER-diagram for the schema");
                 println!("  :hist - Show command/query history");
                 println!("  :snip <action> - 💾 Manage query snippets (coming soon!)");
                 println!("  :diff <dbA> <dbB> - 🔄 Perform a schema diff between databases (coming soon!)");
@@ -373,8 +373,16 @@ pub fn run_repl() {
                 println!("This will search your database schema and queries for: {:?}", search_term);
             }
             Command::Erd(table) => {
-                println!("📊 ER Diagram functionality is coming soon!");
-                println!("This will show entity relationship diagrams for table: {:?}", table);
+                match schema_map::generate_schema_map() {
+                    Ok(schema_map) => {
+                        let diagram = schema_map::render_schema_map(&schema_map);
+                        println!("{}", diagram);
+                    }
+                    Err(e) => {
+                        println!("❌ Error generating schema map: {}", e);
+                        println!("Make sure you have connected to a database with :open first.");
+                    }
+                }
             }
             Command::Snip(action) => {
                 println!("💾 Query snippets functionality is coming soon!");

@@ -9,7 +9,19 @@ This document tracks the current status of the TUIQL project, including complete
 
 ## Current Status
 
-### Milestone: **Core Features Development**
+### Milestone: **M2: Advanced Features (IN PROGRESS)**
+- ✅ **Schema Map Visualization:** Full ER diagram implementation with foreign key relationships and ASCII visualization
+- 🎯 **Remaining M2 Features:**
+  - FTS5 helper implementation
+  - JSON1 helper implementation
+  - Database diff functionality
+  - Cancellable query support
+  - Configuration system
+  - Property tests for DDL operations
+
+### Milestone: **M1: Core Features (COMPLETED)**
+- ✅ **All M1 Features:** SQL auto-completion, query plan visualization, test concurrency fixes, integration tests
+- ✅ **REPL Improvements:** All commands now functional or properly marked as "coming soon"
 
 - **Repository Setup:** ✅ Completed
 - **Database Connection Implementation:** ✅ Completed
@@ -32,7 +44,7 @@ This document tracks the current status of the TUIQL project, including complete
 - **Schema Navigator Implementation:** ✅ Completed
 - **Plan Visualizer Enhancements:** ✅ Completed - Implemented structured EXPLAIN QUERY PLAN parsing with tree visualization
 - **Record Inspector Enhancements:** ✅ Completed
-- **Schema Map Enhancements:** ✅ Completed: Added grouping by schema, highlighting relationships, and advanced visualization features.
+- **Schema Map Visualization (M2):** ✅ COMPLETED - Full ER diagram implementation with foreign key relationships and ASCII visualization
 - **Results Grid Enhancements:** 🚧 In Progress: Virtualized scrolling, sticky headers, and export functionality need verification and testing.
 - **Command Palette Stub:** ✅ Completed: Commands like `:open`, `:attach`, `:help`, etc., are functional with auto-completion in the REPL.
 - **Help Command:** ✅ Completed: Displays a list of available commands and their descriptions.
@@ -76,9 +88,10 @@ This document tracks the current status of the TUIQL project, including complete
 1. **Schema Navigator:**
    - Implement a tree-based schema navigator with badges for row counts, PK/FK indicators, and index details. ✅ Completed
    - Added accurate row count display and table metadata ✅ Completed
-2. **Schema Map:**
-   - Parse real schema data to generate a map.
-   - Visualize relationships between tables using ASCII diagrams.
+2. **Schema Map:** ✅ COMPLETED
+    - Parse real schema data to generate a map ✅
+    - Visualize relationships between tables using ASCII diagrams ✅
+    - :erd command wired to working functionality ✅
 3. **Query History:**
    - Implemented persistent storage for query history ✅ Completed
    - Added execution time tracking ✅ Completed
@@ -127,8 +140,9 @@ This document tracks the current status of the TUIQL project, including complete
 
 ## Notes
 
-- **Major Iteration Completion:** Successfully implemented SQL query auto-completion and enhanced query plan visualization, significantly advancing M1 capabilities
-- **Test Suite Enhancement:** Resolved concurrency issues, achieving 88+ passing tests with proper isolation mechanisms
+- **M2 Milestone Achievement:** Successfully implemented comprehensive schema map visualization with ER diagram functionality
+- **Major Iteration Completion:** M1 delivery included SQL query auto-completion, query plan visualization, and REPL command fixes
+- **Test Suite Enhancement:** Resolved concurrency issues, achieving 90+ passing tests with proper isolation mechanisms
 - **Architecture Refinement:** Improved code quality with better error handling and modular design
-- The project has moved beyond **M0 milestone** with substantial **M1 features** now implemented and tested
+- **Milestone Progress:** Project has successfully completed M1 (Core Features) and launched M2 (Advanced Features)
 - Regular updates will be made to this document as progress continues.

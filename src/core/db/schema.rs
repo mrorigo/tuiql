@@ -8,6 +8,17 @@ use crate::core::Result;
 use rusqlite::{Connection, Row};
 use std::collections::HashMap;
 
+/// Represents a foreign key relationship
+#[derive(Debug, Clone)]
+pub struct ForeignKey {
+    /// The table this foreign key references
+    pub referenced_table: String,
+    /// The column in this table that is the foreign key
+    pub from_column: String,
+    /// The referenced column in the foreign table
+    pub to_column: String,
+}
+
 /// Represents a database column with its metadata
 #[derive(Debug, Clone)]
 pub struct Column {
@@ -80,6 +91,8 @@ pub struct Table {
     pub columns: Vec<Column>,
     /// List of indexes defined on this table
     pub indexes: Vec<Index>,
+    /// List of foreign key relationships
+    pub foreign_keys: Vec<ForeignKey>,
 }
 
 impl Table {
@@ -87,11 +100,13 @@ impl Table {
     fn from_database(conn: &Connection, table_name: &str) -> Result<Self> {
         let columns = get_table_columns(conn, table_name)?;
         let indexes = get_table_indexes(conn, table_name)?;
+        let foreign_keys = get_table_foreign_keys(conn, table_name)?;
 
         Ok(Table {
             name: table_name.to_string(),
             columns,
             indexes,
+            foreign_keys,
         })
     }
 }
@@ -165,6 +180,31 @@ fn get_table_indexes(conn: &Connection, table_name: &str) -> Result<Vec<Index>> 
     }
 
     Ok(indexes)
+}
+
+/// Helper function to retrieve foreign key information for a specific table
+fn get_table_foreign_keys(conn: &Connection, table_name: &str) -> Result<Vec<ForeignKey>> {
+    let mut foreign_keys = Vec::new();
+
+    let mut stmt = conn.prepare(&format!("PRAGMA foreign_key_list('{}')", table_name))?;
+    let fk_iter = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(2)?, // referenced table
+            row.get::<_, String>(3)?, // from column
+            row.get::<_, String>(4)?, // to column
+        ))
+    })?;
+
+    for fk_result in fk_iter {
+        let (referenced_table, from_column, to_column) = fk_result?;
+        foreign_keys.push(ForeignKey {
+            referenced_table,
+            from_column,
+            to_column,
+        });
+    }
+
+    Ok(foreign_keys)
 }
 
 #[cfg(test)]

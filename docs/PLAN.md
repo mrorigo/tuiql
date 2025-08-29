@@ -47,7 +47,7 @@ crates/
 - [x] Integration tests for query features - MAJOR IMPROVEMENT
 
 ### M2: Advanced Features
-- [ ] Schema map visualization
+- [x] Schema map visualization ✅ COMPLETED
 - [ ] FTS5 helper implementation
 - [ ] JSON1 helper implementation
 - [ ] Database diff functionality
@@ -96,10 +96,12 @@ crates/
 - Add export functionality
 
 ### Next Up
-- Add transaction command handlers
-- Implement transaction state tracking
-- Add JSON tree viewer for JSON columns
-- Implement basic query plan visualization
+- FTS5 helper implementation - SQLite full-text search capabilities
+- JSON1 helper implementation - Built-in JSON functions for SQLite
+- Database diff functionality - Schema comparison between databases
+- Cancellable query support - Interrupting long-running queries
+- Configuration system - User preferences and persistent settings
+- Property tests for DDL operations - Robust DDL testing framework
 
 ### Completed
 - [x] Repository setup and documentation
@@ -114,5 +116,6 @@ crates/
 - [x] Enhanced Query Plan Visualization with Tree Structure
 - [x] Test Suite Improvements and Concurrency Issue Resolution
 - [x] Major M1 Feature Completion
+- [x] Schema Map Visualization (M2) - Complete ER diagram implementation with foreign key relationships
 
 This plan will evolve as the project grows. Continuous improvements and adaptations will be made to meet the project's objectives and timelines.
