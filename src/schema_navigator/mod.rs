@@ -3,7 +3,7 @@
 /// This module provides functionality for navigating the database schema
 /// in a tree-based structure. It includes features such as displaying
 /// row counts, primary/foreign key indicators, and index details.
-use crate::core::{Result, TuiqlError};
+use crate::core::Result;
 use crate::db;
 use std::collections::HashMap;
 

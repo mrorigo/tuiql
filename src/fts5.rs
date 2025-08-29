@@ -15,7 +15,6 @@
 use crate::core::{Result, TuiqlError};
 use crate::db;
 use rusqlite::{Connection, params};
-use std::collections::HashMap;
 
 /// FTS5 table configuration
 #[derive(Debug, Clone)]
