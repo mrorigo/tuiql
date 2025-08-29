@@ -1,5 +1,6 @@
 pub mod command_palette;
 pub mod db;
+pub mod json_viewer;
 pub mod plan;
 pub mod query_editor;
 pub mod record_inspector;
