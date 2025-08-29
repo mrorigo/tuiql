@@ -1,6 +1,3 @@
-tuiql/README.md
-```
-
 # TUIQL: Professional SQLite Client with Advanced Schema & Search
 
 > 🎯 **Project Status**: Professional Database Toolkit - M1 Complete, M2 Advanced Features in Progress (87% Complete)
