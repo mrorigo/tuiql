@@ -1,11 +1,12 @@
-tuiql/src/sql.rs
-// SQL Execution Stub for Basic Query Processing
-//
-// This module provides a stub implementation for executing SQL queries.
-// In a real implementation, this module would interface with a database engine,
-// parse SQL statements, and return structured results.
-//
-// For now, it returns a dummy response indicating the query has been "executed".
+use crate::core::{Result, TuiqlError};
+
+/// SQL Execution Stub for Basic Query Processing
+///
+/// This module provides a stub implementation for executing SQL queries.
+/// In a real implementation, this module would interface with a database engine,
+/// parse SQL statements, and return structured results.
+///
+/// For now, it returns a dummy response indicating the query has been "executed".
 
 /// Executes a SQL query string and returns a dummy result.
 ///
@@ -24,10 +25,10 @@ tuiql/src/sql.rs
 /// let result = sql::execute_query("SELECT * FROM users;");
 /// assert!(result.is_ok());
 /// ```
-pub fn execute_query(query: &str) -> Result<String, String> {
+pub fn execute_query(query: &str) -> Result<String> {
     let trimmed = query.trim();
     if trimmed.is_empty() {
-        return Err("Query is empty".to_string());
+        return Err(TuiqlError::Query("Cannot execute empty SQL query - please provide a valid SQL statement".to_string()));
     }
 
     // Stub response: In a real implementation, this would execute the
@@ -52,6 +53,13 @@ mod tests {
         let query = "   ";
         let result = execute_query(query);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Query is empty".to_string());
+
+        // Verify it's a Query error with expected message content
+        if let Err(TuiqlError::Query(msg)) = result {
+            assert!(msg.contains("Cannot execute empty SQL query"));
+            assert!(msg.contains("please provide a valid SQL statement"));
+        } else {
+            panic!("Expected Query error for empty query");
+        }
     }
 }

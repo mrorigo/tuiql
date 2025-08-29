@@ -7,6 +7,7 @@
 // Currently, a record is represented as a simple key-value map (using Vec<(String, String)>),
 // and basic functions are provided to view and edit the record.
 
+use crate::core::{Result, TuiqlError};
 use regex::Regex;
 use std::collections::HashMap;
 use crate::json_viewer::JsonTreeViewer;
@@ -129,17 +130,24 @@ impl RecordInspector {
 
     /// Edits a field in the record with validation. Returns true if the field was successfully updated,
     /// or false if the field did not exist or validation failed.
-    pub fn edit_field(&mut self, key: &str, new_value: &str) -> Result<bool, String> {
+    pub fn edit_field(&mut self, key: &str, new_value: &str) -> Result<bool> {
         if self.record.fields.contains_key(key) {
             if !self.validate_field(key, new_value) {
-                return Err(format!("Validation failed for field '{}'", key));
+                return Err(TuiqlError::Query(format!(
+                    "Field '{}' validation failed - value '{}' does not meet requirements for this field type",
+                    key, new_value
+                )));
             }
             self.record
                 .fields
                 .insert(key.to_string(), new_value.to_string());
             Ok(true)
         } else {
-            Err(format!("Validation failed for field '{}'", key))
+            Err(TuiqlError::Query(format!(
+                "Cannot edit field '{}' - field does not exist in record. Available fields: {}",
+                key,
+                self.record.fields.keys().map(|k| k.as_str()).collect::<Vec<_>>().join(", ")
+            )))
         }
     }
 }
@@ -196,16 +204,37 @@ mod tests {
             record,
             json_viewers: HashMap::new(),
         };
+
+        // Test invalid field validation - field doesn't exist so it should fail before validation
         let result = inspector.edit_field("email", "invalid-email");
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Validation failed for field 'email'");
+        if let Err(TuiqlError::Query(msg)) = result {
+            assert!(msg.contains("Cannot edit field 'email'"));
+            assert!(msg.contains("field does not exist"));
+        } else {
+            panic!("Expected Query error for nonexistent field");
+        }
 
+        // Test nonexistent field
         let result = inspector.edit_field("nonexistent", "value");
         assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err(),
-            "Validation failed for field 'nonexistent'"
-        );
+        if let Err(TuiqlError::Query(msg)) = result {
+            assert!(msg.contains("Cannot edit field 'nonexistent'"));
+            assert!(msg.contains("field does not exist"));
+        } else {
+            panic!("Expected Query error for nonexistent field");
+        }
+
+        // Test validation failure for existing field
+        inspector.record.set_field("email", "test@test.com");
+        let result = inspector.edit_field("email", "invalid-email");
+        assert!(result.is_err());
+        if let Err(TuiqlError::Query(msg)) = result {
+            assert!(msg.contains("email"));
+            assert!(msg.contains("validation failed"));
+        } else {
+            panic!("Expected Query error for validation failure");
+        }
     }
 
     #[test]

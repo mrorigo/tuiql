@@ -1,3 +1,5 @@
+use crate::core::{Result, TuiqlError};
+
 pub struct TableInfo {
     pub name: String,
     pub columns: Vec<ColumnInfo>,
@@ -14,9 +16,11 @@ pub struct ColumnInfo {
 /// Simulates discovery of a database schema by returning dummy table information.
 /// In a real implementation, this function would connect to a SQLite database,
 /// query the sqlite_master table and PRAGMA table_info for each table.
-pub fn discover_schema(db_path: &str) -> Result<Vec<TableInfo>, String> {
+pub fn discover_schema(db_path: &str) -> Result<Vec<TableInfo>> {
     if db_path.is_empty() {
-        return Err("Empty db_path provided".to_string());
+        return Err(TuiqlError::Schema(
+            "Cannot discover schema: database path is empty - please provide a valid database file path".to_string()
+        ));
     }
 
     // Stub: Return dummy table information.
@@ -61,6 +65,14 @@ mod tests {
     fn test_discover_schema_empty_db_path() {
         let result = discover_schema("");
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Empty db_path provided");
+
+        // Verify it's a Schema error with expected message content
+        if let Err(TuiqlError::Schema(msg)) = result {
+            assert!(msg.contains("Cannot discover schema"));
+            assert!(msg.contains("database path is empty"));
+            assert!(msg.contains("please provide a valid database file path"));
+        } else {
+            panic!("Expected Schema error for empty database path");
+        }
     }
 }
