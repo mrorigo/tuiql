@@ -1,15 +1,17 @@
-// JSON Tree Viewer Module for TUIQL
-//
-// This module provides functionality to parse and display JSON data in a structured
-// tree format within the terminal. It supports nested objects and arrays, and provides
-// collapsible nodes for better navigation of complex JSON structures.
-//
-// Key features:
-// - Parse JSON strings into tree structures
-// - Render tree with collapsible/expandable nodes
-// - Handle different JSON value types (objects, arrays, primitives)
-// - Integration with TUI for keyboard navigation
-// - Type-aware display with icons for different value types
+use crate::core::{Result, TuiqlError};
+
+/// JSON Tree Viewer Module for TUIQL
+///
+/// This module provides functionality to parse and display JSON data in a structured
+/// tree format within the terminal. It supports nested objects and arrays, and provides
+/// collapsible nodes for better navigation of complex JSON structures.
+///
+/// Key features:
+/// - Parse JSON strings into tree structures
+/// - Render tree with collapsible/expandable nodes
+/// - Handle different JSON value types (objects, arrays, primitives)
+/// - Integration with TUI for keyboard navigation
+/// - Type-aware display with icons for different value types
 
 
 /// Represents different types of JSON values for display purposes.
@@ -95,9 +97,9 @@ impl JsonTreeViewer {
     }
 
     /// Load JSON data from a string.
-    pub fn load_json(&mut self, json_str: &str) -> Result<(), String> {
+    pub fn load_json(&mut self, json_str: &str) -> Result<()> {
         let parsed: serde_json::Value = serde_json::from_str(json_str)
-            .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+            .map_err(|e| TuiqlError::Json(e))?;
 
         self.root = Some(self.build_tree_from_value("root".to_string(), parsed, 0));
         self.focused_path.clear();
