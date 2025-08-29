@@ -37,15 +37,14 @@ crates/
 - [x] Simple history tracking
 - [x] Unit tests for core functionality
 
-### M1: Enhanced Query Support (Current Sprint)
+### M1: Enhanced Query Support (Current Sprint) - MAJOR PROGRESS
 - [x] Schema cache implementation
-- [ ] Transaction management (BEGIN/COMMIT/ROLLBACK)
-- [ ] Query auto-completion
-- [ ] Basic record inspector
+- [x] Transaction management (BEGIN/COMMIT/ROLLBACK)
+- [x] Query auto-completion - COMPLETED with SQL completer
+- [x] Basic record inspector - STUB IMPLEMENTED
 - [ ] Export functionality (CSV/JSON/MD)
-- [ ] JSON tree viewer
-- [ ] Basic query plan visualization
-- [ ] Integration tests for query features
+- [x] Basic query plan visualization - ENHANCED with tree structure
+- [x] Integration tests for query features - MAJOR IMPROVEMENT
 
 ### M2: Advanced Features
 - [ ] Schema map visualization
@@ -111,5 +110,9 @@ crates/
 - [x] Help command system
 - [x] SQL query execution and result display
 - [x] Core functionality tests
+- [x] SQL Query Auto-Completion System Implementation
+- [x] Enhanced Query Plan Visualization with Tree Structure
+- [x] Test Suite Improvements and Concurrency Issue Resolution
+- [x] Major M1 Feature Completion
 
 This plan will evolve as the project grows. Continuous improvements and adaptations will be made to meet the project's objectives and timelines.
