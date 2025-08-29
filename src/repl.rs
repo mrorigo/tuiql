@@ -1,6 +1,7 @@
 use crate::{
     db, schema_navigator,
     storage::{HistoryEntry, Storage},
+    plan,
 };
 use dirs::data_dir;
 use std::io::{self, Write};
@@ -237,21 +238,21 @@ pub fn run_repl() {
                 println!("Available commands:");
                 println!("  :help - List all available commands and their descriptions");
                 println!("  :open <path> - Open a database");
-                println!("  :attach <n> <path> - Attach a database");
-                println!("  :ro - Toggle read-only mode");
-                println!("  :rw - Toggle read-write mode");
+                println!("  :attach <n> <path> - 🔗 Attach a database (coming soon!)");
+                println!("  :ro - 🔒 Toggle read-only mode (coming soon!)");
+                println!("  :rw - 🔓 Toggle read-write mode (coming soon!)");
                 println!("  :begin - Start a new transaction");
                 println!("  :commit - Commit current transaction");
                 println!("  :rollback - Rollback current transaction");
-                println!("  :pragma <n> [val] - View or set a pragma");
+                println!("  :pragma <n> [val] - ⚙️ View or set SQLite pragmas (coming soon!)");
                 println!("  :plan - Visualize the query plan");
-                println!("  :fmt - Format the current query buffer");
-                println!("  :export <format> - Export current result set");
-                println!("  :find <text> - Search for text in the database schema or queries");
-                println!("  :erd [table] - Show ER-diagram for the schema");
+                println!("  :fmt - 🛠️ Format the current query buffer (coming soon!)");
+                println!("  :export <format> - 📤 Export current result set (coming soon!)");
+                println!("  :find <text> - 🔍 Search for text in the database schema or queries (coming soon!)");
+                println!("  :erd [table] - 📊 Show ER-diagram for the schema (coming soon!)");
                 println!("  :hist - Show command/query history");
-                println!("  :snip <action> - Manage query snippets");
-                println!("  :diff <dbA> <dbB> - Perform a schema diff between databases");
+                println!("  :snip <action> - 💾 Manage query snippets (coming soon!)");
+                println!("  :diff <dbA> <dbB> - 🔄 Perform a schema diff between databases (coming soon!)");
                 println!("  :tables - Show database schema information");
                 println!("\nOr enter SQL queries directly without any prefix.");
             }
@@ -274,7 +275,25 @@ pub fn run_repl() {
             Command::Plan => {
                 println!("Enter a SQL query to visualize its execution plan:");
                 println!("(Note: Make sure a database is connected with :open first)");
-                println!("\nExecute :plan <your_sql_query> to see the plan, or enter the query directly here:");
+                loop {
+                    print!("Query: ");
+                    io::stdout().flush().expect("Failed to flush stdout");
+                    let mut input = String::new();
+                    io::stdin()
+                        .read_line(&mut input)
+                        .expect("Failed to read input");
+                    let trimmed = input.trim();
+                    if trimmed.is_empty() {
+                        continue;
+                    }
+                    if trimmed.eq_ignore_ascii_case("quit") || trimmed.eq_ignore_ascii_case("exit") {
+                        break;
+                    }
+                    match plan::explain_query(&trimmed) {
+                        Ok(plan_output) => println!("{}", plan_output),
+                        Err(e) => eprintln!("Error generating plan: {}", e),
+                    }
+                }
             }
             Command::Open(path) => match db::connect(&path) {
                 Ok(_) => println!("Successfully opened database: {}", path),
@@ -341,7 +360,50 @@ pub fn run_repl() {
                     }
                 }
             }
-            _ => println!("You entered: {:?}", command),
+            Command::Fmt => {
+                println!("🛠️  SQL Formatting is coming soon!");
+                println!("This feature will automatically format your SQL queries for better readability.");
+            }
+            Command::Export(format) => {
+                println!("📤 Export functionality is coming soon!");
+                println!("This will export your query results to format: {:?}", format);
+            }
+            Command::Find(search_term) => {
+                println!("🔍 Search functionality is coming soon!");
+                println!("This will search your database schema and queries for: {:?}", search_term);
+            }
+            Command::Erd(table) => {
+                println!("📊 ER Diagram functionality is coming soon!");
+                println!("This will show entity relationship diagrams for table: {:?}", table);
+            }
+            Command::Snip(action) => {
+                println!("💾 Query snippets functionality is coming soon!");
+                println!("This will manage saved query snippets. Action: {:?}", action);
+            }
+            Command::Diff { db_a, db_b } => {
+                println!("🔄 Schema diff functionality is coming soon!");
+                println!("This will compare schemas between {} and {}", db_a, db_b);
+            }
+            Command::Pragma { name, value } => {
+                println!("⚙️  Pragma functionality is coming soon!");
+                println!("This will view/set SQLite pragmas. Name: {}, Value: {:?}", name, value);
+            }
+            Command::Ro => {
+                println!("🔒 Read-only mode functionality is coming soon!");
+                println!("This will set the database to read-only mode.");
+            }
+            Command::Rw => {
+                println!("🔓 Read-write mode functionality is coming soon!");
+                println!("This will set the database to read-write mode.");
+            }
+            Command::Attach { name, path } => {
+                println!("🔗 Database attach functionality is coming soon!");
+                println!("This will attach database '{}' at path '{}'", name, path);
+            }
+            Command::Unknown(command_str) => {
+                println!("❓ Unknown command: '{}'", command_str);
+                println!("Type ':help' to see available commands.");
+            }
         }
     }
 }
