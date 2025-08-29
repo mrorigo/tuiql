@@ -1,7 +1,7 @@
 use crate::{
     db, schema_navigator, schema_map,
     storage::{HistoryEntry, Storage},
-    plan,
+    plan, fts5,
 };
 use dirs::data_dir;
 use std::io::{self, Write};
@@ -50,6 +50,7 @@ pub enum Command {
     Export(String),
     Find(String),
     Erd(Option<String>),
+    Fts5(Option<String>),
     Hist,
     Snip(String),
     Diff { db_a: String, db_b: String },
@@ -130,6 +131,13 @@ pub fn parse_command(input: &str) -> Command {
                 Command::Erd(Some(parts[1].to_string()))
             } else {
                 Command::Erd(None)
+            }
+        }
+        "fts5" => {
+            if parts.len() >= 2 {
+                Command::Fts5(Some(parts[1].to_string()))
+            } else {
+                Command::Fts5(None)
             }
         }
         "hist" => Command::Hist,
@@ -250,6 +258,7 @@ pub fn run_repl() {
                 println!("  :export <format> - 📤 Export current result set (coming soon!)");
                 println!("  :find <text> - 🔍 Search for text in the database schema or queries (coming soon!)");
                 println!("  :erd [table] - 📊 Show ER-diagram for the schema");
+                println!("  :fts5 [cmd] - 🔍 FTS5 full-text search helper");
                 println!("  :hist - Show command/query history");
                 println!("  :snip <action> - 💾 Manage query snippets (coming soon!)");
                 println!("  :diff <dbA> <dbB> - 🔄 Perform a schema diff between databases (coming soon!)");
@@ -381,6 +390,39 @@ pub fn run_repl() {
                     Err(e) => {
                         println!("❌ Error generating schema map: {}", e);
                         println!("Make sure you have connected to a database with :open first.");
+                    }
+                }
+            }
+            Command::Fts5(action) => {
+                match action.as_deref() {
+                    Some("help") | None => {
+                        println!("{}", fts5::fts5_help());
+                    },
+                    Some("list") => {
+                        match fts5::list_fts5_tables() {
+                            Ok(_) => {},
+                            Err(e) => println!("❌ Error listing FTS5 tables: {}", e),
+                        }
+                    },
+                    Some(cmd) => {
+                        // Handle subcommands like :fts5 create table_name column1,column2
+                        if cmd.starts_with("create") {
+                            println!("🔧 FTS5 table creation is coming soon!");
+                            println!("For now, use direct SQL:");
+                            println!("  CREATE VIRTUAL TABLE my_fts USING fts5(title, content);");
+                        } else if cmd.starts_with("populate") {
+                            println!("🔧 FTS5 content population is coming soon!");
+                            println!("Try searching an existing FTS5 table:");
+                            println!("  SELECT * FROM my_fts WHERE my_fts MATCH 'search term';");
+                        } else if cmd.starts_with("search") {
+                            println!("🔍 Try these FTS5 search examples:");
+                            println!("  Simple: SELECT * FROM docs_fts WHERE docs_fts MATCH 'database';");
+                            println!("  Ranked: SELECT rank FROM docs_fts WHERE docs_fts MATCH 'database' ORDER BY rank;");
+                            println!("  With highlighting: SELECT highlight(docs_fts, 0, '<b>', '</b>') FROM docs_fts WHERE docs_fts MATCH 'database';");
+                        } else {
+                            println!("❓ Unknown FTS5 command: '{}'", cmd);
+                            println!("Available :fts5 commands: help (default), list, create, populate, search");
+                        }
                     }
                 }
             }
