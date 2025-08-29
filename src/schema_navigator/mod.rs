@@ -3,6 +3,7 @@
 /// This module provides functionality for navigating the database schema
 /// in a tree-based structure. It includes features such as displaying
 /// row counts, primary/foreign key indicators, and index details.
+use crate::core::{Result, TuiqlError};
 use crate::db;
 use std::collections::HashMap;
 
@@ -23,15 +24,19 @@ pub struct SchemaNavigator {
 
 impl SchemaNavigator {
     /// Creates a new, empty SchemaNavigator.
-    pub fn new() -> Result<Self, String> {
-        let schema = db::get_schema()?;
+    pub fn new() -> Result<Self> {
+        let schema = db::get_schema().map_err(|err| TuiqlError::App(err))?;
         let mut tables = HashMap::new();
 
         for (name, db_table) in schema.tables {
             // Get row count
             let row_count = match db::execute_query(&format!("SELECT COUNT(*) FROM '{}'", name)) {
                 Ok(result) => Some(result.rows[0][0].parse::<usize>().unwrap_or(0)),
-                Err(_) => None,
+                Err(e) => {
+                    // Log the query error but continue with None for row count
+                    eprintln!("Warning: Failed to get row count for table '{}': {}", name, e);
+                    None
+                }
             };
 
             let table = Table {
