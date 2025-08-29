@@ -285,21 +285,43 @@ mod tests {
         cleanup_global_state();
         let mut conn_mgr = ConnectionManager::new();
         ConnectionManager::initialize();
+
+        // Connect to in-memory database for testing
         conn_mgr.connect(":memory:").unwrap();
 
-        // Start transaction
+        // Test transaction state transitions using ConnectionManager methods
+
+        // Verify initial autocommit state
+        assert_eq!(conn_mgr.transaction_state(), TransactionState::Autocommit);
+
+        // Start transaction - should succeed
         conn_mgr.update_transaction_state("BEGIN").unwrap();
         assert_eq!(conn_mgr.transaction_state(), TransactionState::Transaction);
 
         // Try to start another transaction - should fail
         assert!(conn_mgr.update_transaction_state("BEGIN").is_err());
+        // State should remain in transaction
+        assert_eq!(conn_mgr.transaction_state(), TransactionState::Transaction);
 
-        // Commit transaction
+        // Commit transaction - should succeed
         conn_mgr.update_transaction_state("COMMIT").unwrap();
         assert_eq!(conn_mgr.transaction_state(), TransactionState::Autocommit);
 
-        // Try to commit without transaction - should fail
+        // Try to commit without active transaction - should fail
         assert!(conn_mgr.update_transaction_state("COMMIT").is_err());
+        // State should remain in autocommit
+        assert_eq!(conn_mgr.transaction_state(), TransactionState::Autocommit);
+
+        // Test rollback functionality
+        conn_mgr.update_transaction_state("BEGIN").unwrap();
+        assert_eq!(conn_mgr.transaction_state(), TransactionState::Transaction);
+
+        conn_mgr.update_transaction_state("ROLLBACK").unwrap();
+        assert_eq!(conn_mgr.transaction_state(), TransactionState::Autocommit);
+
+        // Try to rollback without transaction - should fail
+        assert!(conn_mgr.update_transaction_state("ROLLBACK").is_err());
+        assert_eq!(conn_mgr.transaction_state(), TransactionState::Autocommit);
     }
 
     #[test]

@@ -25,7 +25,7 @@ pub struct SchemaNavigator {
 impl SchemaNavigator {
     /// Creates a new, empty SchemaNavigator.
     pub fn new() -> Result<Self> {
-        let schema = db::get_schema().map_err(|err| TuiqlError::App(err))?;
+        let schema = db::get_schema()?;
         let mut tables = HashMap::new();
 
         for (name, db_table) in schema.tables {

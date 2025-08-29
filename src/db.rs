@@ -1,3 +1,4 @@
+use crate::core::{Result, TuiqlError};
 use once_cell::sync::OnceCell;
 use rusqlite::{types::ValueRef, Connection};
 use std::collections::HashMap;
@@ -81,18 +82,15 @@ fn format_value(value: ValueRef) -> String {
 }
 
 /// Attempts to connect to a SQLite database using the provided `db_path`.
-pub fn connect(db_path: &str) -> Result<(), String> {
+pub fn connect(db_path: &str) -> Result<()> {
     match Connection::open(db_path) {
         Ok(conn) => {
             // Initialize the connection with some sensible defaults
-            if let Err(e) = conn.execute_batch(
+            conn.execute_batch(
                 "
                 PRAGMA foreign_keys = ON;
                 PRAGMA journal_mode = WAL;
-            ",
-            ) {
-                return Err(format!("Failed to set initial pragmas: {}", e));
-            }
+            ").map_err(|e| TuiqlError::Query(format!("Failed to set initial PRAGMA settings: {}", e)))?;
 
             // Store the connection in our global state
             DB_STATE.get_or_init(|| {
@@ -108,75 +106,75 @@ pub fn connect(db_path: &str) -> Result<(), String> {
                 guard.current_path = Some(db_path.to_string());
                 Ok(())
             } else {
-                Err("Failed to acquire connection lock".to_string())
+                Err(TuiqlError::App("Failed to acquire connection lock. Global database state is corrupted or locked by another process.".to_string()))
             }
         }
-        Err(e) => Err(e.to_string()),
+        Err(e) => Err(TuiqlError::App(format!("Failed to connect to database '{}': {}. Ensure the path exists and the database file is accessible.", db_path, e))),
     }
 }
 
 /// Executes a SQL query and returns the results.
-pub fn execute_query(sql: &str) -> Result<QueryResult, String> {
-    let state_cell = DB_STATE.get().ok_or("No database connection")?;
+pub fn execute_query(sql: &str) -> Result<QueryResult> {
+    let state_cell = DB_STATE.get().ok_or(TuiqlError::App("No database connection found. Please connect to a database first.".to_string()))?;
     let mut state_guard = state_cell
         .lock()
-        .map_err(|_| "Failed to acquire connection lock")?;
+        .map_err(|_| TuiqlError::App("Failed to acquire database connection lock. The connection may be in use by another operation.".to_string()))?;
 
     // Update transaction state based on SQL command
     let sql_upper = sql.trim().to_uppercase();
     if sql_upper == "BEGIN" || sql_upper == "BEGIN TRANSACTION" {
         if state_guard.transaction_state != TransactionState::Autocommit {
-            return Err("Transaction already in progress".to_string());
+            return Err(TuiqlError::Transaction("Transaction already in progress. Cannot start a new transaction.".to_string()));
         }
         state_guard.transaction_state = TransactionState::Transaction;
     } else if sql_upper == "COMMIT" {
         if state_guard.transaction_state != TransactionState::Transaction {
-            return Err("No transaction in progress".to_string());
+            return Err(TuiqlError::Transaction("No active transaction to commit. Use BEGIN first to start a transaction.".to_string()));
         }
         state_guard.transaction_state = TransactionState::Autocommit;
     } else if sql_upper == "ROLLBACK" {
         if state_guard.transaction_state != TransactionState::Transaction {
-            return Err("No transaction in progress".to_string());
+            return Err(TuiqlError::Transaction("No active transaction to rollback. Use BEGIN first to start a transaction.".to_string()));
         }
         state_guard.transaction_state = TransactionState::Autocommit;
     }
     let conn = state_guard
         .connection
         .as_ref()
-        .ok_or("No active database connection")?;
+        .ok_or(TuiqlError::App("No active database connection. The connection may have been lost or closed.".to_string()))?;
 
-    let mut stmt = conn.prepare(sql).map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare(sql).map_err(|e| TuiqlError::Query(format!("Failed to prepare SQL statement: {}. Check your SQL syntax.", e)))?;
 
     // Get column names
     let columns: Vec<String> = stmt.column_names().into_iter().map(String::from).collect();
     let column_count = stmt.column_count();
 
     // Execute query and collect rows
-    let rows = stmt
+    let rows: Vec<Vec<String>> = stmt
         .query_map([], |row| {
             let mut values = Vec::new();
             for i in 0..column_count {
-                values.push(format_value(row.get_ref(i).unwrap()));
+                values.push(format_value(row.get_ref(i)?));
             }
             Ok(values)
         })
-        .map_err(|e| e.to_string())?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| TuiqlError::Query(format!("Query execution failed: {}. Check table names and column references.", e)))?
+        .filter_map(|row| row.map_err(|e| TuiqlError::Query(format!("Error processing query results: {}. The query may have incompatible data types.", e))).ok())
+        .collect();
 
     Ok(QueryResult::new(columns, rows))
 }
 
 /// Retrieves schema information for the connected database.
-pub fn get_schema() -> Result<Schema, String> {
-    let state_cell = DB_STATE.get().ok_or("No database connection")?;
+pub fn get_schema() -> Result<Schema> {
+    let state_cell = DB_STATE.get().ok_or(TuiqlError::Schema("No database connection found. Please connect to a database first.".to_string()))?;
     let state_guard = state_cell
         .lock()
-        .map_err(|_| "Failed to acquire connection lock")?;
+        .map_err(|_| TuiqlError::Schema("Failed to acquire database connection lock. The connection may be in use by another operation.".to_string()))?;
     let conn = state_guard
         .connection
         .as_ref()
-        .ok_or("No active database connection")?;
+        .ok_or(TuiqlError::Schema("No active database connection. The connection may have been lost or closed.".to_string()))?;
 
     let mut tables = HashMap::new();
 
@@ -185,22 +183,22 @@ pub fn get_schema() -> Result<Schema, String> {
         .prepare(
             "SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
         )
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| TuiqlError::Schema(format!("Failed to prepare schema query: {}. Database metadata may be corrupted.", e)))?;
 
     let table_iter = stmt
         .query_map([], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
         })
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| TuiqlError::Schema(format!("Failed to execute schema query: {}. Cannot retrieve table information.", e)))?;
 
     for table_result in table_iter {
-        let (table_name, _sql) = table_result.map_err(|e| e.to_string())?;
+        let (table_name, _sql) = table_result.map_err(|e| TuiqlError::Schema(format!("Error reading table metadata: {}. Schema may be incomplete.", e)))?;
 
         // Get columns for this table
         let mut columns = Vec::new();
         let mut col_stmt = conn
             .prepare(&format!("PRAGMA table_info('{}')", table_name))
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| TuiqlError::Schema(format!("Failed to query table info for '{}': {}. Table schema may be corrupted.", table_name, e)))?;
 
         let col_iter = col_stmt
             .query_map([], |row| {
@@ -212,17 +210,17 @@ pub fn get_schema() -> Result<Schema, String> {
                     dflt_value: row.get(4)?,
                 })
             })
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| TuiqlError::Schema(format!("Error processing columns for table '{}': {}.", table_name, e)))?;
 
         for col_result in col_iter {
-            columns.push(col_result.map_err(|e| e.to_string())?);
+            columns.push(col_result.map_err(|e| TuiqlError::Schema(format!("Error reading column metadata for table '{}': {}.", table_name, e)))?);
         }
 
         // Get indexes for this table
         let mut indexes = Vec::new();
         let mut idx_stmt = conn
             .prepare(&format!("PRAGMA index_list('{}')", table_name))
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| TuiqlError::Schema(format!("Failed to query index list for table '{}': {}.", table_name, e)))?;
 
         let idx_iter = idx_stmt
             .query_map([], |row| {
@@ -231,23 +229,23 @@ pub fn get_schema() -> Result<Schema, String> {
                     row.get::<_, bool>(2)?,   // unique
                 ))
             })
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| TuiqlError::Schema(format!("Error processing index list for table '{}': {}.", table_name, e)))?;
 
         for idx_result in idx_iter {
-            let (idx_name, unique) = idx_result.map_err(|e| e.to_string())?;
+            let (idx_name, unique) = idx_result.map_err(|e| TuiqlError::Schema(format!("Error reading index metadata for table '{}': {}.", table_name, e)))?;
 
             // Get columns for this index
             let mut idx_col_stmt = conn
                 .prepare(&format!("PRAGMA index_info('{}')", idx_name))
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| TuiqlError::Schema(format!("Failed to query index info for '{}': {}.", idx_name, e)))?;
 
             let mut idx_columns = Vec::new();
             let idx_col_iter = idx_col_stmt
                 .query_map([], |row| row.get::<_, String>(2))
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| TuiqlError::Schema(format!("Error retrieving columns for index '{}': {}.", idx_name, e)))?;
 
             for col_result in idx_col_iter {
-                idx_columns.push(col_result.map_err(|e| e.to_string())?);
+                idx_columns.push(col_result.map_err(|e| TuiqlError::Schema(format!("Error reading index column for '{}': {}.", idx_name, e)))?);
             }
 
             indexes.push(Index {
@@ -282,8 +280,11 @@ pub(crate) mod tests {
             guard.transaction_state = TransactionState::default();
         }
 
-        // Create new connection and initialize the test database
-        let conn = Connection::open_in_memory().unwrap();
+        // For tests, we'll bypass the connect() function and directly set up the state
+        // since connect() expects a file path but we need an in-memory database
+        let conn = Connection::open_in_memory().expect("Failed to open in-memory database");
+
+        // Set up test schema
         conn.execute_batch(
             "
             CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
@@ -292,44 +293,44 @@ pub(crate) mod tests {
             INSERT INTO test (name, value) VALUES ('test1', 1.1);
             INSERT INTO test (name, value) VALUES ('test2', 2.2);
         ",
-        )
-        .unwrap();
+        ).expect("Failed to initialize test database schema");
 
-        // Initialize or update the global state
-        let _ = DB_STATE.get_or_init(|| Mutex::new(DbState {
-            connection: None,
-            current_path: None,
+        // Initialize the global state with the test connection
+        DB_STATE.get_or_init(|| Mutex::new(DbState {
+            connection: Some(conn),
+            current_path: Some(":memory:".to_string()),
             transaction_state: TransactionState::default(),
         }));
 
-        // Update the global state with our new connection
-        if let Some(mut guard) = DB_STATE.get().and_then(|state| state.lock().ok()) {
-            guard.connection = Some(conn);
-            guard.current_path = Some(":memory:".to_string());
-            guard.transaction_state = TransactionState::default();
-        }
+        // Note: We don't replace the existing state to avoid race conditions during tests
     }
 
     /// Helper function to reset the test database
     pub fn reset_test_db() {
         if let Ok(mut guard) = DB_STATE.get().unwrap().lock() {
-            if let Some(_conn) = guard.connection.take() {
-                // Create a new connection and reset the database
-                let new_conn = Connection::open_in_memory().unwrap();
-                new_conn
-                    .execute_batch(
-                        "
+            // Clear the connection to create a fresh state
+            guard.connection = None;
+            guard.current_path = None;
+            guard.transaction_state = TransactionState::default();
+
+            // Create a new connection and reset the database
+            let new_conn = Connection::open_in_memory().expect("Failed to open in-memory database");
+            new_conn
+                .execute_batch(
+                    "
                     CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
                     CREATE INDEX idx_test_name ON test(name);
                     CREATE UNIQUE INDEX idx_test_value ON test(value);
                     INSERT INTO test (name, value) VALUES ('test1', 1.1);
                     INSERT INTO test (name, value) VALUES ('test2', 2.2);
                 ",
-                    )
-                    .unwrap();
-                guard.connection = Some(new_conn);
-                guard.transaction_state = TransactionState::default();
-            }
+                )
+                .expect("Failed to initialize test database schema");
+
+            // Update the guard with the new connection
+            guard.connection = Some(new_conn);
+            guard.current_path = Some(":memory:".to_string());
+            guard.transaction_state = TransactionState::default();
         }
     }
 

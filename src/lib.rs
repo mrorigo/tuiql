@@ -15,4 +15,9 @@ pub mod results_grid;
 pub mod schema_map;
 pub mod schema_navigator;
 pub mod sql;
+pub mod sql_completer;
 pub mod storage;
+
+// Test utilities (available only in test builds)
+#[cfg(test)]
+pub mod test_utils;
