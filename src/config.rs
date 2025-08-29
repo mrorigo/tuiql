@@ -1,3 +1,4 @@
+use crate::core::{Result, TuiqlError, CommandResult};
 use serde::Deserialize;
 use std::fs;
 use std::path::Path;
@@ -44,9 +45,12 @@ pub struct SqliteConfig {
 /// let config = load_config("config.toml").expect("Failed to load config");
 /// println!("{:?}", config);
 /// ```
-pub fn load_config<P: AsRef<Path>>(path: P) -> Result<Config, String> {
-    let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
-    toml::from_str(&content).map_err(|e| e.to_string())
+pub fn load_config<P: AsRef<Path>>(path: P) -> Result<Config> {
+    let content = fs::read_to_string(path)
+        .map_err(|e| TuiqlError::Config(format!("Failed to read config file {:?}: {}", path.as_ref(), e)))?;
+
+    toml::from_str(&content)
+        .map_err(|e| TuiqlError::Config(format!("Failed to parse config TOML: {}", e)))
 }
 
 #[cfg(test)]
