@@ -271,6 +271,11 @@ pub fn run_repl() {
                 Ok(_) => println!("Transaction rolled back"),
                 Err(e) => eprintln!("Failed to rollback transaction: {}", e),
             },
+            Command::Plan => {
+                println!("Enter a SQL query to visualize its execution plan:");
+                println!("(Note: Make sure a database is connected with :open first)");
+                println!("\nExecute :plan <your_sql_query> to see the plan, or enter the query directly here:");
+            }
             Command::Open(path) => match db::connect(&path) {
                 Ok(_) => println!("Successfully opened database: {}", path),
                 Err(e) => eprintln!("Error opening database: {}", e),
