@@ -13,4 +13,5 @@ pub mod repl;
 pub mod results_grid;
 pub mod schema_map;
 pub mod schema_navigator;
+pub mod sql;
 pub mod storage;
