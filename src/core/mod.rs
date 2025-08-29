@@ -5,6 +5,7 @@
 /// for database operations, error handling, configuration management, and
 /// other core functionality.
 
+pub mod db;
 pub mod error;
 
 // Re-export commonly used types for convenience
