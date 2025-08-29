@@ -1,3 +1,7 @@
+// Core infrastructure modules
+pub mod core;
+
+// Feature-specific modules
 pub mod command_palette;
 pub mod db;
 pub mod json_viewer;
