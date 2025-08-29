@@ -52,6 +52,9 @@ pub struct ConnectionManager {
 impl ConnectionManager {
     /// Creates a new connection manager
     pub fn new() -> Self {
+        // Ensure global state is initialized
+        ConnectionManager::initialize();
+
         ConnectionManager {
             state: DB_STATE.get(),
         }
@@ -240,19 +243,20 @@ pub fn has_connection() -> bool {
 mod tests {
     use super::*;
 
-    fn setup_test_connection() -> Connection {
-        let conn = Connection::open_in_memory().unwrap();
-        conn.execute_batch(
-            "
-            CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT);
-            INSERT INTO test (name) VALUES ('test');
-        "
-        ).unwrap();
-        conn
+    fn cleanup_global_state() {
+        // Clean up any existing state for test isolation
+        if let Some(state_ref) = DB_STATE.get() {
+            if let Ok(mut state) = state_ref.lock() {
+                state.connection = None;
+                state.current_path = None;
+                state.transaction_state = TransactionState::Autocommit;
+            }
+        }
     }
 
     #[test]
     fn test_connection_manager_initialization() {
+        cleanup_global_state();
         let mut conn_mgr = ConnectionManager::new();
         ConnectionManager::initialize();
 
@@ -265,6 +269,7 @@ mod tests {
 
     #[test]
     fn test_connection_disconnect() {
+        cleanup_global_state();
         let mut conn_mgr = ConnectionManager::new();
         ConnectionManager::initialize();
 
@@ -277,6 +282,7 @@ mod tests {
 
     #[test]
     fn test_transaction_state_management() {
+        cleanup_global_state();
         let mut conn_mgr = ConnectionManager::new();
         ConnectionManager::initialize();
         conn_mgr.connect(":memory:").unwrap();
