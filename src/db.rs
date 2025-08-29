@@ -275,27 +275,39 @@ pub(crate) mod tests {
     use super::*;
 
     pub fn setup_test_db() {
-        // Initialize the connection singleton first
-        DB_STATE.get_or_init(|| {
-            let conn = Connection::open_in_memory().unwrap();
-            // Reset the database to ensure we have exactly 2 rows
-            conn.execute_batch(
-                "
-                CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
-                CREATE INDEX idx_test_name ON test(name);
-                CREATE UNIQUE INDEX idx_test_value ON test(value);
-                INSERT INTO test (name, value) VALUES ('test1', 1.1);
-                INSERT INTO test (name, value) VALUES ('test2', 2.2);
-            ",
-            )
-            .unwrap();
+        // Clear any existing state first to ensure test isolation
+        if let Some(mut guard) = DB_STATE.get().and_then(|state| state.lock().ok()) {
+            guard.connection = None;
+            guard.current_path = None;
+            guard.transaction_state = TransactionState::default();
+        }
 
-            Mutex::new(DbState {
-                connection: Some(conn),
-                current_path: Some(":memory:".to_string()),
-                transaction_state: TransactionState::default(),
-            })
-        });
+        // Create new connection and initialize the test database
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "
+            CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT, value REAL);
+            CREATE INDEX idx_test_name ON test(name);
+            CREATE UNIQUE INDEX idx_test_value ON test(value);
+            INSERT INTO test (name, value) VALUES ('test1', 1.1);
+            INSERT INTO test (name, value) VALUES ('test2', 2.2);
+        ",
+        )
+        .unwrap();
+
+        // Initialize or update the global state
+        let _ = DB_STATE.get_or_init(|| Mutex::new(DbState {
+            connection: None,
+            current_path: None,
+            transaction_state: TransactionState::default(),
+        }));
+
+        // Update the global state with our new connection
+        if let Some(mut guard) = DB_STATE.get().and_then(|state| state.lock().ok()) {
+            guard.connection = Some(conn);
+            guard.current_path = Some(":memory:".to_string());
+            guard.transaction_state = TransactionState::default();
+        }
     }
 
     /// Helper function to reset the test database
