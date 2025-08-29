@@ -1,12 +1,21 @@
 use crate::{
     db, schema_navigator, schema_map,
     storage::{HistoryEntry, Storage},
-    plan, fts5, json1,
+    plan, fts5, json1, sql_completer,
 };
 use dirs::data_dir;
+use reedline::{
+    Completer, History, Prompt,
+    Reedline, Signal, FileBackedHistory,
+    HistorySessionId, HistoryItem, DefaultPrompt,
+};
+use std::borrow::Cow;
+use std::collections::VecDeque;
 use std::io::{self, Write};
+use std::sync::Arc;
 use std::path::PathBuf;
 use std::time::Instant;
+
 
 #[derive(Debug, Default)]
 struct ReplState {}
@@ -172,65 +181,90 @@ pub fn parse_command(input: &str) -> Command {
     }
 }
 
-/// Runs a simple REPL shell that reads commands from standard input,
-/// parses them, and prints the parsed command. Type ":quit" to exit.
+/// Enhanced REPL shell with readline support, persistent history, and auto-completion
 pub fn run_repl() {
     use crate::command_palette::CommandPalette;
 
-    let _state = ReplState::new();
-    println!("Welcome to the tuiql REPL! Type :quit to exit.");
-    let mut input = String::new();
+    println!("🏗️  Welcome to the tuiql REPL! Type :quit to exit.");
+    println!("Enhanced with reedline support and persistent history.\n");
+
+    let state = ReplState::new();
     let command_palette = CommandPalette::new();
 
-    // Initialize storage
-    let mut data_path = data_dir().unwrap_or_else(|| PathBuf::from("."));
-    data_path.push("tuiql");
-    std::fs::create_dir_all(&data_path).expect("Failed to create data directory");
-    data_path.push("history.db");
-
-    let storage = Storage::new(data_path).expect("Failed to initialize storage");
-
-    loop {
-        if let Ok(guard) = db::DB_STATE.get().unwrap().lock() {
-            let tx_indicator = match guard.transaction_state {
-                db::TransactionState::Transaction => "*",
-                db::TransactionState::Failed => "!",
-                db::TransactionState::Autocommit => "",
-            };
-            if let Some(path) = &guard.current_path {
-                print!("{}{}>", path, tx_indicator);
-            } else {
-                print!("{}>", tx_indicator);
-            }
-        } else {
-            print!("> ");
-        }
-        io::stdout().flush().expect("Failed to flush stdout");
-        input.clear();
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Failed to read input");
-        let trimmed = input.trim().to_string();
-        if trimmed.is_empty() {
-            continue;
-        }
-
-        if trimmed == ":quit" {
-            break;
-        }
-
-        if trimmed.starts_with(':') {
-            let suggestions = command_palette.filter_commands(&trimmed[1..]);
-            if !suggestions.is_empty() {
-                println!("Did you mean:");
-                for suggestion in suggestions {
-                    println!("  :{} - {}", suggestion.name, suggestion.description);
+    // Initialize storage with better error handling
+    let storage = match data_dir() {
+        Some(mut data_path) => {
+            data_path.push("tuiql");
+            match std::fs::create_dir_all(&data_path) {
+                Ok(_) => Storage::new(data_path.clone()).unwrap_or_else(|_| {
+                    eprintln!("Warning: Failed to initialize persistent storage, using in-memory storage");
+                    Storage::new(PathBuf::from(":memory:")).expect("Failed to create in-memory storage")
+                }),
+                Err(_) => {
+                    eprintln!("Warning: Failed to create data directory, using in-memory storage");
+                    Storage::new(PathBuf::from(":memory:")).expect("Failed to create in-memory storage")
                 }
             }
         }
+        None => {
+            eprintln!("Warning: No data directory available, using in-memory storage");
+            Storage::new(PathBuf::from(":memory:")).expect("Failed to create in-memory storage")
+        }
+    };
 
-        let command = parse_command(&trimmed);
-        match command {
+    // Initialize reedline with history
+    let mut line_editor = Reedline::create();
+
+    // Configure history storage (gracefully fall back to in-memory if directory access fails)
+    let history_result = if let Some(mut data_path) = data_dir() {
+        data_path.push("tuiql");
+        let mut history_path = data_path.clone();
+        history_path.push("repl_history.txt");
+        if data_path.exists() || std::fs::create_dir_all(&data_path).is_ok() {
+            FileBackedHistory::with_file(1000, history_path).ok()
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    if let Some(history) = history_result {
+        line_editor = line_editor.with_history(Box::new(history) as Box<dyn History>);
+    } else {
+        println!("Note: Using in-memory history (persistent history unavailable)");
+    }
+
+    println!("🔧 Reedline enabled: Ctrl+R history search, arrow keys navigation");
+    println!("Use Ctrl+D or :quit to exit\n");
+
+    loop {
+        // Read line with reedline
+        match line_editor.read_line(&DefaultPrompt) {
+            Ok(Signal::Success(line)) => {
+                let trimmed = line.trim();
+                if trimmed.is_empty() {
+                    continue;
+                }
+
+                if trimmed == ":quit" {
+                    break;
+                }
+
+                // Handle command suggestions
+                if trimmed.starts_with(':') {
+                    let suggestions = command_palette.filter_commands(&trimmed[1..]);
+                    if !suggestions.is_empty() {
+                        println!("Did you mean:");
+                        for suggestion in suggestions {
+                            println!("  :{} - {}", suggestion.name, suggestion.description);
+                        }
+                    }
+                }
+
+                // Parse and execute command
+                let command = parse_command(&trimmed);
+                match command {
             Command::Hist => match storage.get_recent_history(10) {
                 Ok(entries) => {
                     println!("Recent command history:");
@@ -476,8 +510,21 @@ pub fn run_repl() {
                 println!("❓ Unknown command: '{}'", command_str);
                 println!("Type ':help' to see available commands.");
             }
+            }
+        }
+        Ok(Signal::CtrlC) => {
+            continue;
+        }
+        Ok(Signal::CtrlD) => {
+            println!("\nGoodbye!");
+            break;
+        }
+        Err(e) => {
+            eprintln!("Error reading input: {}", e);
+            continue;
         }
     }
+}
 }
 
 #[cfg(test)]
