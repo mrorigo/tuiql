@@ -1,11 +1,11 @@
 use crate::{
     db, schema_navigator, schema_map,
     storage::{HistoryEntry, Storage},
-    plan, fts5, json1, sql_completer,
+    plan, fts5, json1, sql_completer::SqlCompleter,
 };
 use dirs::data_dir;
 use reedline::{
-    Completer, History, Prompt,
+    Completer, History, Prompt, Span, Suggestion,
     Reedline, Signal, FileBackedHistory,
     HistorySessionId, HistoryItem, DefaultPrompt,
 };
@@ -39,6 +39,54 @@ impl ReplState {
             }
         } else {
             String::new()
+        }
+    }
+}
+
+/// Reedline-compatible completer that wraps SqlCompleter
+pub struct ReedlineCompleter {
+    sql_completer: SqlCompleter,
+    query_buffer: String,
+}
+
+impl ReedlineCompleter {
+    /// Creates a new ReedlineCompleter with an underlying SqlCompleter
+    pub fn new() -> Self {
+        ReedlineCompleter {
+            sql_completer: SqlCompleter::new(),
+            query_buffer: String::new(),
+        }
+    }
+
+    /// Updates the query buffer with current input (useful for multiline support)
+    pub fn set_query_buffer(&mut self, buffer: String) {
+        self.query_buffer = buffer;
+    }
+}
+
+impl Completer for ReedlineCompleter {
+    fn complete(
+        &mut self,
+        line: &str,
+        position: usize
+    ) -> Vec<Suggestion> {
+        // Try to update schema for better completions
+        let _ = self.sql_completer.update_schema();
+
+        // Get suggestions from SqlCompleter
+        match self.sql_completer.complete(line, position) {
+            Ok(suggestions) => {
+                suggestions.into_iter()
+                    .map(|s| Suggestion {
+                        value: s.clone(),
+                        description: Some("SQL completion".to_string()),
+                        extra: None,
+                        span: Span::new(position, position),
+                        append_whitespace: s.ends_with(' ') || matches!(s.to_uppercase().as_str(), "SELECT" | "FROM" | "WHERE" | "JOIN" | "ON" | "ORDER" | "BY" | "LIMIT" | "GROUP" | "HAVING"),
+                    })
+                    .collect()
+            }
+            Err(_) => Vec::new(),
         }
     }
 }
@@ -212,8 +260,12 @@ pub fn run_repl() {
         }
     };
 
-    // Initialize reedline with history
-    let mut line_editor = Reedline::create();
+    // Initialize completer
+    let completer = ReedlineCompleter::new();
+
+    // Initialize reedline with history and completion
+    let mut line_editor = Reedline::create()
+        .with_completer(Box::new(completer));
 
     // Configure history storage (gracefully fall back to in-memory if directory access fails)
     let history_result = if let Some(mut data_path) = data_dir() {
