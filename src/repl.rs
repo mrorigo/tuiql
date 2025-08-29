@@ -239,26 +239,29 @@ pub fn run_repl() {
     let state = ReplState::new();
     let command_palette = CommandPalette::new();
 
-    // Initialize storage with better error handling
-    let storage = match data_dir() {
-        Some(mut data_path) => {
-            data_path.push("tuiql");
-            match std::fs::create_dir_all(&data_path) {
-                Ok(_) => Storage::new(data_path.clone()).unwrap_or_else(|_| {
-                    eprintln!("Warning: Failed to initialize persistent storage, using in-memory storage");
-                    Storage::new(PathBuf::from(":memory:")).expect("Failed to create in-memory storage")
-                }),
-                Err(_) => {
-                    eprintln!("Warning: Failed to create data directory, using in-memory storage");
-                    Storage::new(PathBuf::from(":memory:")).expect("Failed to create in-memory storage")
-                }
-            }
-        }
-        None => {
-            eprintln!("Warning: No data directory available, using in-memory storage");
-            Storage::new(PathBuf::from(":memory:")).expect("Failed to create in-memory storage")
-        }
-    };
+    // Initialize storage with cross-platform compatibility
+    let home_dir = std::env::var("HOME").ok()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            eprintln!("Warning: HOME environment variable not set, using .");
+            PathBuf::from(".")
+        });
+    let mut tuiql_dir = home_dir.clone();
+    tuiql_dir.push(".tuiql");
+
+    // Create the directory first
+    if let Err(err) = std::fs::create_dir_all(&tuiql_dir) {
+        eprintln!("Warning: Failed to create data directory '{}': {}, using in-memory storage", tuiql_dir.display(), err);
+    }
+
+    // Create separate paths for storage and history
+    let mut storage_path = tuiql_dir.clone();
+    storage_path.push("storage.db");
+
+    let storage = Storage::new(storage_path).unwrap_or_else(|err| {
+        eprintln!("Warning: Failed to initialize persistent storage: {}, using in-memory storage", err);
+        Storage::new(PathBuf::from(":memory:")).expect("Failed to create in-memory storage")
+    });
 
     // Initialize completer
     let completer = ReedlineCompleter::new();
@@ -267,19 +270,13 @@ pub fn run_repl() {
     let mut line_editor = Reedline::create()
         .with_completer(Box::new(completer));
 
-    // Configure history storage (gracefully fall back to in-memory if directory access fails)
-    let history_result = if let Some(mut data_path) = data_dir() {
-        data_path.push("tuiql");
-        let mut history_path = data_path.clone();
-        history_path.push("repl_history.txt");
-        if data_path.exists() || std::fs::create_dir_all(&data_path).is_ok() {
-            FileBackedHistory::with_file(1000, history_path).ok()
-        } else {
-            None
-        }
-    } else {
-        None
-    };
+    // Configure reedline history storage to use the same ~/.tuiql directory
+    let mut history_path = tuiql_dir;
+    history_path.push("repl_history.txt");
+    let history_result = FileBackedHistory::with_file(1000, history_path).ok();
+    if history_result.is_none() {
+        println!("Note: Using in-memory history (persistent history unavailable)");
+    }
 
     if let Some(history) = history_result {
         line_editor = line_editor.with_history(Box::new(history) as Box<dyn History>);
