@@ -31,6 +31,33 @@ TUIQL is a blazing-fast, terminal-native, keyboard-centric SQLite client designe
 - **Auto-completion**: 🚧 Tab completion for SQL and commands (in progress)
 - **Performance**: ✅ Fast response times for common operations
 - **Extensibility**: 🚧 Plugin support (planned)
+```
+
+## Code Quality & Architecture
+
+### Error Handling
+
+TUIQL uses a structured error handling system that categorizes errors by their domain:
+
+- **Database Errors** (`TuiqlError::Database`): Connection, query execution, and SQLite operations
+- **Query Errors** (`TuiqlError::Query`): SQL validation, syntax checking, and data manipulation
+- **Configuration Errors** (`TuiqlError::Config`): File loading, TOML parsing, and settings validation
+- **Schema Errors** (`TuiqlError::Schema`): Database schema discovery, comparisons, and validation
+- **UI Errors** (`TuiqlError::Ui`): Export formats, display rendering, and user interface issues
+- **JSON Errors** (`TuiqlError::Json`): JSON parsing, serialization, and processing failures
+- **Command Errors** (`TuiqlError::Command`): REPL command parsing, validation, and execution
+
+This categorization provides better error messages, easier debugging, and more predictable error handling for both developers and automated tools.
+
+### Recent Improvements
+
+The codebase has undergone significant architectural improvements to enhance maintainability and AI comprehension:
+
+- **Structured Error Handling**: Replaced generic string errors with categorized `TuiqlError` types
+- **Modular Architecture**: Split monolithic modules into focused, single-responsibility components
+- **Enhanced Test Coverage**: Comprehensive test suites for all core functionality
+- **Improved Documentation**: Clear documentation standards and architectural decision records
+```
 
 ---
 
