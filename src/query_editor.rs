@@ -1,8 +1,10 @@
-// Query Editor Module for TUIQL
-//
-// This module provides a query editor for TUIQL with features like multiline editing,
-// syntax highlighting, autocompletion of SQL keywords and table names, bracket balance checking,
-// linting for dangerous SQL operations, and query formatting.
+use crate::core::{Result, TuiqlError};
+
+/// Query Editor Module for TUIQL
+///
+/// This module provides a query editor for TUIQL with features like multiline editing,
+/// syntax highlighting, autocompletion of SQL keywords and table names, bracket balance checking,
+/// linting for dangerous SQL operations, and query formatting.
 
 #[derive(Debug, Default)]
 pub struct QueryEditor {
@@ -34,25 +36,25 @@ impl QueryEditor {
 
     /// Simulates executing the query.
     /// In a complete implementation, this method would interface with the SQL execution engine.
-    pub fn execute(&self) -> Result<String, String> {
+    pub fn execute(&self) -> Result<String> {
         if self.query_buffer.trim().is_empty() {
-            Err("Query is empty".to_string())
+            Err(TuiqlError::Query("Query is empty".to_string()))
         } else {
             Ok(format!("Executing query: {}", self.query_buffer))
         }
     }
 
     /// Lints the current query for dangerous operations.
-    pub fn lint_query(&self) -> Result<(), String> {
+    pub fn lint_query(&self) -> Result<()> {
         let query = self.query_buffer.trim().to_lowercase();
         if query.starts_with("delete") && !query.contains("where") {
-            Err("Dangerous operation: DELETE without WHERE clause".to_string())
+            Err(TuiqlError::Query("Dangerous operation: DELETE without WHERE clause".to_string()))
         } else if query.starts_with("update") && !query.contains("where") {
-            Err("Dangerous operation: UPDATE without WHERE clause".to_string())
+            Err(TuiqlError::Query("Dangerous operation: UPDATE without WHERE clause".to_string()))
         } else if query.contains("select") && query.contains("join") && !query.contains("on") {
-            Err("Dangerous operation: Implicit JOIN without ON clause".to_string())
+            Err(TuiqlError::Query("Dangerous operation: Implicit JOIN without ON clause".to_string()))
         } else if query.contains("begin") && !query.contains("commit") {
-            Err("Dangerous operation: BEGIN without COMMIT or ROLLBACK".to_string())
+            Err(TuiqlError::Query("Dangerous operation: BEGIN without COMMIT or ROLLBACK".to_string()))
         } else {
             Ok(())
         }
@@ -103,7 +105,11 @@ mod tests {
         let editor = QueryEditor::new();
         let result = editor.execute();
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Query is empty");
+        if let Err(TuiqlError::Query(msg)) = result {
+            assert_eq!(msg, "Query is empty");
+        } else {
+            panic!("Expected Query error");
+        }
     }
 
     #[test]
@@ -132,10 +138,11 @@ mod tests {
             editor.set_query("DELETE FROM users;");
             let result = editor.lint_query();
             assert!(result.is_err());
-            assert_eq!(
-                result.unwrap_err(),
-                "Dangerous operation: DELETE without WHERE clause"
-            );
+            if let Err(TuiqlError::Query(msg)) = result {
+                assert_eq!(msg, "Dangerous operation: DELETE without WHERE clause");
+            } else {
+                panic!("Expected Query error");
+            }
         }
 
         #[test]
@@ -144,10 +151,11 @@ mod tests {
             editor.set_query("UPDATE users SET name = 'John';");
             let result = editor.lint_query();
             assert!(result.is_err());
-            assert_eq!(
-                result.unwrap_err(),
-                "Dangerous operation: UPDATE without WHERE clause"
-            );
+            if let Err(TuiqlError::Query(msg)) = result {
+                assert_eq!(msg, "Dangerous operation: UPDATE without WHERE clause");
+            } else {
+                panic!("Expected Query error");
+            }
         }
 
         #[test]
@@ -167,10 +175,11 @@ mod tests {
             editor.set_query("SELECT * FROM users JOIN orders;");
             let result = editor.lint_query();
             assert!(result.is_err());
-            assert_eq!(
-                result.unwrap_err(),
-                "Dangerous operation: Implicit JOIN without ON clause"
-            );
+            if let Err(TuiqlError::Query(msg)) = result {
+                assert_eq!(msg, "Dangerous operation: Implicit JOIN without ON clause");
+            } else {
+                panic!("Expected Query error");
+            }
         }
 
         #[test]
@@ -179,10 +188,11 @@ mod tests {
             editor.set_query("BEGIN TRANSACTION; SELECT * FROM users;");
             let result = editor.lint_query();
             assert!(result.is_err());
-            assert_eq!(
-                result.unwrap_err(),
-                "Dangerous operation: BEGIN without COMMIT or ROLLBACK"
-            );
+            if let Err(TuiqlError::Query(msg)) = result {
+                assert_eq!(msg, "Dangerous operation: BEGIN without COMMIT or ROLLBACK");
+            } else {
+                panic!("Expected Query error");
+            }
         }
     }
 }
