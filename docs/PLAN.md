@@ -56,9 +56,9 @@ crates/
 - [x] Property tests for DDL operations ✅ COMPLETED - Complete implementation with round-trip testing, edge case coverage, and property-based verification
 
 ### M3: Polish & Extensions (Current Sprint)
-- [ ] Plugin system implementation
+- [x] Plugin system implementation (Core infrastructure with JSON-RPC support, manifest discovery, installation, and capability enumeration)
 - [ ] Plan cost overlay visualization
-- [ ] Dangerous operation linting
+- [x] Dangerous operation linting (Enhanced linting with sophisticated SQL parsing for DML/DDL operations, implicit JOINs, uncommitted transactions)
 - [ ] ER diagram auto-layout
 - [ ] Performance optimization
 - [ ] Cross-platform testing
@@ -116,5 +116,6 @@ crates/
 - [x] FTS5 Helper Implementation (M2) - Complete full-text search helper with create/populate/search commands, REPL integration, and comprehensive tests
 - [x] Database Diff Functionality (M2) - Complete schema comparison between databases with detailed difference reporting
 - [x] Cancellable Query Support (M2) - Complete implementation with interrupt handling, Ctrl+C integration, and REPL support with comprehensive tests
+- [x] Plugin System Implementation (M3) - Complete plugin infrastructure with JSON-RPC communication, manifest discovery, Git-based installation, capability enumeration, REPL integration, and comprehensive test coverage
 
 This plan will evolve as the project grows. Continuous improvements and adaptations will be made to meet the project's objectives and timelines.
