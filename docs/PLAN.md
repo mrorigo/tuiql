@@ -50,7 +50,7 @@ crates/
 - [x] Schema map visualization ✅ COMPLETED
 - [x] JSON1 helper implementation ✅ COMPLETED
 - [x] FTS5 helper implementation ✅ COMPLETED
-- [ ] Database diff functionality
+- [x] Database diff functionality ✅ COMPLETED
 - [ ] Cancellable query support
 - [ ] Configuration system
 - [ ] Property tests for DDL operations
@@ -118,5 +118,7 @@ crates/
 - [x] Major M1 Feature Completion
 - [x] Schema Map Visualization (M2) - Complete ER diagram implementation with foreign key relationships
 - [x] JSON1 Helper Implementation (M2) - Complete JSON1 extension helpers with query builders, REPL integration, and comprehensive tests
+- [x] FTS5 Helper Implementation (M2) - Complete full-text search helper with create/populate/search commands, REPL integration, and comprehensive tests
+- [x] Database Diff Functionality (M2) - Complete schema comparison between databases with detailed difference reporting
 
 This plan will evolve as the project grows. Continuous improvements and adaptations will be made to meet the project's objectives and timelines.

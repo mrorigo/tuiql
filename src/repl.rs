@@ -1,7 +1,7 @@
 use crate::{
     db, schema_navigator, schema_map,
     storage::{HistoryEntry, Storage},
-    plan, fts5, json1, sql_completer::SqlCompleter,
+    plan, fts5, json1, sql_completer::SqlCompleter, diff,
 };
 use dirs::data_dir;
 use reedline::{
@@ -522,8 +522,17 @@ pub fn run_repl() {
                 println!("This will manage saved query snippets. Action: {:?}", action);
             }
             Command::Diff { db_a, db_b } => {
-                println!("🔄 Schema diff functionality is coming soon!");
-                println!("This will compare schemas between {} and {}", db_a, db_b);
+                match diff::compare_databases(&db_a, &db_b) {
+                    Ok(comparison) => {
+                        let output = diff::format_comparison(&comparison, &db_a, &db_b);
+                        println!("{}", output);
+                    }
+                    Err(e) => {
+                        println!("❌ Error performing schema diff: {}", e);
+                        println!("Make sure both database files exist and are valid SQLite databases.");
+                        println!("Usage: :diff <database1> <database2>");
+                    }
+                }
             }
             Command::Pragma { name, value } => {
                 println!("⚙️  Pragma functionality is coming soon!");

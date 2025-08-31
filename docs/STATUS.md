@@ -14,8 +14,8 @@ This document tracks the current status of the TUIQL project, including complete
 - ✅ **JSON1 Helper Implementation:** Complete JSON1 extension helpers with query builders, validation, and REPL integration
 - ✅ **Reedline Professional Interface:** Complete terminal editing with Ctrl+R history search, Tab completion, persistent storage, and cross-platform compatibility
 - ✅ **FTS5 Helper Implementation:** Complete FTS5 helpers with create/populate/search commands, REPL integration, SQL completion, and comprehensive tests
+- ✅ **Database Diff Functionality:** Complete schema comparison between databases with detailed difference reporting and REPL integration
 - 🎯 **Remaining M2 Features:**
-  - Database diff functionality
   - Cancellable query support
   - Configuration system
   - Property tests for DDL operations
@@ -143,6 +143,7 @@ This document tracks the current status of the TUIQL project, including complete
 
 - **M2 Milestone Achievement:** Successfully implemented comprehensive schema map visualization with ER diagram functionality
 - **Reedline Interface Complete:** Professional terminal interface with Ctrl+R search, Tab completion, persistent cross-platform storage
+- **Database Diff Implementation:** Complete schema comparison functionality with detailed difference reporting, REPL integration, and comprehensive test coverage
 - **Major Iteration Completion:** M1 delivery included SQL query auto-completion, query plan visualization, and REPL command fixes
 - **Test Suite Enhancement:** Resolved concurrency issues, achieving 90+ passing tests with proper isolation mechanisms
 - **Architecture Refinement:** Improved code quality with better error handling and modular design
