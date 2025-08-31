@@ -122,6 +122,7 @@ pub enum Command {
     Rollback,
     Pragma { name: String, value: Option<String> },
     Plan,
+    PlanEnhanced,
     Fmt,
     Export { format: String, filename: Option<String> },
     Find(String),
@@ -189,6 +190,7 @@ pub fn parse_command(input: &str) -> Command {
             }
         }
         "plan" => Command::Plan,
+        "plan_enhanced" => Command::PlanEnhanced,
         "fmt" => Command::Fmt,
         "export" => {
             if parts.len() >= 2 {
@@ -403,6 +405,7 @@ pub fn run_repl() {
                 println!("  :rollback - Rollback current transaction");
                 println!("  :pragma <n> [val] - ⚙️ View or set SQLite pragmas (coming soon!)");
                 println!("  :plan - Visualize the query plan");
+                println!("  :plan_enhanced - 🔬 Enhanced query plan with cost overlay and performance data");
                 println!("  :fmt - 🛠️ Format the current query buffer (coming soon!)");
                 println!("  :export <format> [<file>] - 📤 Export current result set (supported: csv, json, markdown)");
                 println!("  :find <text> - 🔍 Search for text in the database schema or queries (coming soon!)");
@@ -452,6 +455,32 @@ pub fn run_repl() {
                     match plan::explain_query(&trimmed) {
                         Ok(plan_output) => println!("{}", plan_output),
                         Err(e) => eprintln!("Error generating plan: {}", e),
+                    }
+                }
+            }
+            Command::PlanEnhanced => {
+                println!("🔬 Enhanced Query Plan Analyzer with Cost Overlay");
+                println!("Enter a SQL query to analyze its execution plan with performance data:");
+                println!("(Note: Make sure a database is connected with :open first)");
+                loop {
+                    print!("Enhanced Query: ");
+                    io::stdout().flush().expect("Failed to flush stdout");
+                    let mut input = String::new();
+                    io::stdin()
+                        .read_line(&mut input)
+                        .expect("Failed to read input");
+                    let trimmed = input.trim();
+                    if trimmed.is_empty() {
+                        continue;
+                    }
+                    if trimmed.eq_ignore_ascii_case("quit") || trimmed.eq_ignore_ascii_case("exit") {
+                        break;
+                    }
+                    println!("\nAnalyzing query execution plan with cost overlay...");
+                    println!("This may take a moment as it executes the query to gather timing data.");
+                    match plan::explain_query_enhanced(&trimmed) {
+                        Ok(plan_output) => println!("{}", plan_output),
+                        Err(e) => eprintln!("Error generating enhanced plan: {}", e),
                     }
                 }
             }
