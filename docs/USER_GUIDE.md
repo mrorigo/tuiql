@@ -12,6 +12,7 @@ Welcome to TUIQL, a terminal-native SQLite client focused on efficiency and ease
 - 📋 Database schema exploration with table relationships
 - ⚡ Real-time query performance analysis
 - 🔗 Transaction management and safety features
+- 🧩 Plugin system for extending functionality with external tools
 
 This guide will help you unlock the full potential of TUIQL's features for effective SQLite development and data analysis.
 
@@ -24,10 +25,12 @@ This guide will help you unlock the full potential of TUIQL's features for effec
    - [Database Modes](#database-modes)
    - [Schema Exploration](#schema-exploration)
    - [Full-Text Search (FTS5)](#full-text-search-fts5)
-5. [Configuration](#configuration)
-6. [Tips and Best Practices](#tips-and-best-practices)
-7. [Troubleshooting](#troubleshooting)
-8. [Future Features](#future-features-m2-development-in-progress)
+5. [Extensibility](#extensibility)
+   - [Plugin System](#plugin-system)
+6. [Configuration](#configuration)
+7. [Tips and Best Practices](#tips-and-best-practices)
+8. [Troubleshooting](#troubleshooting)
+9. [Future Features](#future-features-m2-development-in-progress)
 
 ## Getting Started
 
@@ -135,6 +138,7 @@ TUIQL provides several commands that start with a colon (`:`). Here's the comple
 - `:find <text>` - Search database schema (coming soon)
 - `:snip <action>` - Query snippet management (coming soon)
 - `:diff <dbA> <dbB>` - Compare database schemas (coming soon)
+- `:plugin <name> [args]` - Execute external plugin with arguments
 
 ## Working with Databases
 
@@ -227,6 +231,65 @@ You can attach additional databases using the `:attach` command (coming soon):
 :attach my_other_db path/to/other.db
 ```
 Overlay the attached database onto the primary database, allowing cross-database queries and references.
+## Extensibility
+
+### Plugin System
+
+TUIQL supports a flexible plugin system that allows you to extend its functionality with external tools and scripts. Plugins are executable programs that can be easily integrated into your workflow through the `:plugin` command.
+
+#### Setting Up Plugins
+
+To use plugins, first configure them in your TUIQL configuration file:
+
+```toml
+[plugins]
+enabled = [
+  { name = "data_exporter", path = "/usr/local/bin/export.sh", description = "Export data in custom format" },
+  { name = "backup_tool", path = "~/scripts/backup.py", description = "Create database backups" }
+]
+```
+
+Each plugin is defined with:
+- `name`: Short name used to invoke the plugin
+- `path`: Path to the executable script or program
+- `description`: Optional description shown in help
+
+#### Using Plugins
+
+Once configured, invoke plugins using the `:plugin` command:
+
+```sql
+:plugin data_exporter csv users
+:plugin backup_tool --path /backup/location
+```
+
+#### Plugin Requirements
+
+For a script to work as a TUIQL plugin:
+
+1. **Executable**: The file must be executable (`chmod +x /path/to/plugin`)
+2. **Path Resolution**: Use absolute paths or `~` for home directory
+3. **Arguments**: Plugins receive command-line arguments as provided
+4. **Output**: Plugin output is displayed in the TUIQL interface
+5. **Exit Codes**: Non-zero exit codes are treated as errors
+
+#### Example Plugin Script
+
+Here's a simple bash plugin example:
+
+```bash
+#!/bin/bash
+# Export plugin that takes table name and format as arguments
+
+TABLE_NAME=$1
+FORMAT=$2
+
+echo "Exporting table $TABLE_NAME in $FORMAT format..."
+
+# Export logic here...
+echo "Export completed!"
+```
+
 
 ## Tips and Best Practices
 
@@ -279,20 +342,24 @@ If you encounter issues:
 3. Consult the project's GitHub issues
 4. Report new issues with detailed reproduction steps
 
-## Future Features (M2 Development in Progress)
-
-The following advanced features are currently being developed:
-
-### In Development (M2 Features)
-- **Cancellable Queries**: Interrupt long-running database operations
-- **Property Tests**: Comprehensive DDL validation framework
+## Future Features (M3 Development in Progress)
 
 ### Recently Completed (M2 Features)
 - ✅ **Configuration System**: TOML configuration with XDG Base Directory support, automatic config creation, and application-wide settings
+- ✅ **Schema Map Visualization**: Complete ER diagram generation with foreign key analysis
 - ✅ **JSON1 Helper**: SQLite's built-in JSON functions for structured data handling
+- ✅ **FTS5 Full-Text Search**: Comprehensive text search with BM25 ranking and highlighting
 - ✅ **Database Diff**: Compare and merge schema differences between databases
+- ✅ **Advanced Query Analysis**: Interactive query plan visualization
+- ✅ **Enhanced REPL**: Intelligent completions and comprehensive help system
+- ✅ **Reedline Professional Interface**: Full terminal editing with Ctrl+R history search, persistent storage, and advanced keyboard navigation
+- ✅ **Plugin System**: External executable plugin integration for custom functionality
 
-### Planned Features
+### Now Available (M2 Features)
+- ✅ **Cancellable Queries**: Interrupt long-running database operations
+- ✅ **Property Tests**: Comprehensive DDL validation framework
+
+### In Development (M3 Features)
 - **Advanced Query Editor**: Syntax highlighting, error detection, and formatting
 - **Results Grid**: Virtualized scrolling for large datasets with sticky headers
 - **Record Inspector**: Enhanced data viewing and editing capabilities
@@ -303,11 +370,15 @@ The following advanced features are currently being developed:
 
 ### Recent Achievements (Now Available)
 
+🚀 **M2 Complete**: Advanced Features Milestone Achieved
+🧩 **Plugin System**: External executable integration for custom tools
 🚀 **Schema Map Visualization**: Complete ER diagram generation with foreign key analysis
 🔍 **FTS5 Full-Text Search**: Comprehensive text search with BM25 ranking and highlighting
 📊 **Advanced Query Analysis**: Interactive query plan visualization
 🎯 **Enhanced REPL**: Intelligent completions and comprehensive help system
 🚶 **Reedline Professional Interface**: Full terminal editing with Ctrl+R history search, persistent storage, and advanced keyboard navigation
+⚖️ **Property Tests**: Comprehensive DDL validation framework
+🔄 **Cancellable Queries**: Interrupt long-running database operations
 
 ## Configuration
 
@@ -330,6 +401,12 @@ vim_mode = true             # Enable Vim-style key bindings (currently unused, f
 [sqlite]
 load_extensions = []        # List of SQLite extensions to load on startup (currently unused, future feature)
 page_size_hint = 4096       # Page size hint for SQLite connections (currently unused, future feature)
+
+[plugins]
+enabled = [
+  { name = "my_plugin", path = "/path/to/plugin", description = "My custom plugin" },
+  { name = "another_plugin", path = "~/scripts/another.sh", description = "Another plugin" }
+]
 ```
 
 ### Editing Configuration
