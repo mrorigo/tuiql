@@ -87,8 +87,14 @@ impl ConnectionManager {
     /// # Examples
     ///
     /// ```
+    /// use tuiql::core::db::ConnectionManager;
+    ///
     /// let mut conn_mgr = ConnectionManager::new();
-    /// conn_mgr.connect("example.db")?;
+    /// if let Err(e) = conn_mgr.connect("example.db") {
+    ///     println!("Connection failed: {}", e);
+    /// } else {
+    ///     println!("Connection successful");
+    /// }
     /// ```
     pub fn connect(&mut self, db_path: &str) -> Result<()> {
         let conn = Connection::open(db_path)

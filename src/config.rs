@@ -81,7 +81,20 @@ impl Default for SqliteConfig {
 /// # Example
 ///
 /// ```
-/// let config = load_config("config.toml").expect("Failed to load config");
+/// use tuiql::config::load_config;
+/// use std::fs;
+/// use tempfile::NamedTempFile;
+///
+/// // Create a temporary config file for the example
+/// let config_content = r#"
+/// [ui]
+/// theme = "dark"
+/// show_status_tips = true
+/// "#;
+/// let temp_file = NamedTempFile::with_suffix(".toml").unwrap();
+/// fs::write(&temp_file.path(), config_content).unwrap();
+///
+/// let config = load_config(&temp_file.path()).expect("Failed to load config");
 /// println!("{:?}", config);
 /// ```
 pub fn load_config<P: AsRef<Path>>(path: P) -> Result<Config> {

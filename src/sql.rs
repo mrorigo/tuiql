@@ -22,6 +22,8 @@ use crate::core::{Result, TuiqlError};
 /// # Examples
 ///
 /// ```
+/// use tuiql::sql;
+///
 /// let result = sql::execute_query("SELECT * FROM users;");
 /// assert!(result.is_ok());
 /// ```
