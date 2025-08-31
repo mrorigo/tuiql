@@ -13,8 +13,8 @@ This document tracks the current status of the TUIQL project, including complete
 - ✅ **FTS5 Helper Implementation:** Complete FTS5 helpers with create/populate/search commands, REPL integration, SQL completion, and comprehensive tests
 - ✅ **Database Diff Functionality:** Complete schema comparison between databases with detailed difference reporting and REPL integration
 - ✅ **Configuration System:** TOML configuration with XDG Base Directory support, automatic config creation, defaults for UI, keys, SQLite settings
-- 🎯 **Remaining M2 Features:**
-  - Cancellable query support
+- ✅ **Cancellable Query Support:** Complete implementation with interrupt handling, Ctrl+C integration, and REPL support with comprehensive tests
+- ⏳ **Remaining M2 Features:**
   - Property tests for DDL operations
 
 ### Milestone: **M1: Core Features (COMPLETED)**

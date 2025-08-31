@@ -3,6 +3,7 @@ use crate::{
     storage::{HistoryEntry, Storage},
     plan, fts5, json1, sql_completer::SqlCompleter, diff,
 };
+use std::sync::mpsc;
 use dirs::data_dir;
 use reedline::{
     Completer, History, Prompt, Span, Suggestion,
@@ -287,6 +288,15 @@ pub fn run_repl() {
     println!("🔧 Reedline enabled: Ctrl+R history search, arrow keys navigation");
     println!("Use Ctrl+D or :quit to exit\n");
 
+    // Track whether we're currently executing a query for cancellation support
+    let executing_query = Arc::new(std::sync::Mutex::new(false));
+    let executing_query_clone = executing_query.clone();
+
+    // Global cancellation channel for interrupt communication
+    let (global_cancel_tx, global_cancel_rx): (mpsc::Sender<()>, mpsc::Receiver<()>) = mpsc::channel();
+    let global_cancel_tx = Arc::new(std::sync::Mutex::new(Some(global_cancel_tx)));
+    let global_cancel_rx = Arc::new(std::sync::Mutex::new(Some(global_cancel_rx)));
+
     loop {
         // Read line with reedline
         match line_editor.read_line(&DefaultPrompt) {
@@ -313,6 +323,7 @@ pub fn run_repl() {
 
                 // Parse and execute command
                 let command = parse_command(&trimmed);
+                let executing_query = executing_query_clone.clone();
                 match command {
             Command::Hist => match storage.get_recent_history(10) {
                 Ok(entries) => {
@@ -405,7 +416,38 @@ pub fn run_repl() {
                     continue;
                 }
                 let start_time = Instant::now();
-                match db::execute_query(&sql) {
+
+                // Mark that we're executing a query
+                *executing_query.lock().unwrap() = true;
+
+                println!("Executing query... (Interrupt will be handled by Ctrl+C in input mode)");
+
+                // Extract the global cancellation receiver for this command
+                let global_rx_clone = global_cancel_rx.clone();
+                let exec_flag = executing_query.clone();
+
+                // Use the cancellable query function with a callback that monitors cancellation
+                let cancellation_monitor = move |interrupt_handle: rusqlite::InterruptHandle| {
+                    std::thread::spawn(move || {
+                        // Wait for cancellation signal from global Ctrl+C handler
+                        let rx_opt = global_rx_clone.lock().unwrap();
+                        if let Some(rx) = rx_opt.as_ref() {
+                            if let Ok(()) = rx.recv() {
+                                // Interruption requested
+                                interrupt_handle.interrupt();
+                                *exec_flag.lock().unwrap() = false;
+                            }
+                        }
+                    });
+                };
+
+                // Execute query with cancellation support
+                let result = db::execute_cancellable_query(&sql, cancellation_monitor);
+
+                // Mark query execution as complete
+                *executing_query.lock().unwrap() = false;
+
+                match result {
                     Ok(result) => {
                         // Print column headers
                         println!("{}", result.columns.join(" | "));
@@ -557,6 +599,19 @@ pub fn run_repl() {
             }
         }
         Ok(Signal::CtrlC) => {
+            // Check if we're currently executing a query
+            if *executing_query.lock().unwrap() {
+                eprintln!("\nQuery execution cancelled by user (Ctrl+C)");
+                *executing_query.lock().unwrap() = false;
+                // Send cancellation signal to interrupt query execution
+                if let Ok(mut tx) = global_cancel_tx.lock() {
+                    if let Some(tx) = tx.take() {
+                        let _ = tx.send(());
+                    }
+                }
+            } else {
+                eprintln!("");
+            }
             continue;
         }
         Ok(Signal::CtrlD) => {

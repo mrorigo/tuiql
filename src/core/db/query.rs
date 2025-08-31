@@ -17,6 +17,76 @@ pub struct QueryResult {
     pub row_count: usize,
 }
 
+use std::sync::{Arc, Mutex};
+use std::sync::mpsc;
+
+/// Result handle for cancellable query execution
+pub struct CancellableQueryHandle {
+    /// Channel for receiving the result
+    result_receiver: mpsc::Receiver<Result<QueryResult>>,
+    /// Handle to interrupt the query
+    interrupt_handle: rusqlite::InterruptHandle,
+    /// Flag to track if query has been started
+    started: bool,
+}
+
+impl CancellableQueryHandle {
+    /// Creates a new cancellable query handle
+    pub fn new(result_receiver: mpsc::Receiver<Result<QueryResult>>, interrupt_handle: rusqlite::InterruptHandle) -> Self {
+        CancellableQueryHandle {
+            result_receiver,
+            interrupt_handle,
+            started: false,
+        }
+    }
+
+    /// Attempts to interrupt the running query
+    pub fn interrupt(&self) {
+        if self.started {
+            self.interrupt_handle.interrupt();
+        }
+    }
+
+    /// Receives the query result with a timeout
+    ///
+    /// # Arguments
+    ///
+    /// * `timeout` - How long to wait for the result
+    ///
+    /// # Returns
+    ///
+    /// Returns the query result if available within the timeout.
+    pub fn recv_timeout(&self, timeout: std::time::Duration) -> std::result::Result<Result<QueryResult>, mpsc::RecvTimeoutError> {
+        self.result_receiver.recv_timeout(timeout)
+    }
+
+    /// Attempts to receive the query result without blocking
+    pub fn try_recv(&self) -> std::result::Result<Result<QueryResult>, mpsc::TryRecvError> {
+        self.result_receiver.try_recv()
+    }
+}
+
+/// A canceller that can be used to interrupt queries
+pub struct QueryCanceller {
+    interrupt_handle: Option<rusqlite::InterruptHandle>,
+}
+
+impl QueryCanceller {
+    /// Creates a new query canceller
+    pub fn new(interrupt_handle: rusqlite::InterruptHandle) -> Self {
+        QueryCanceller {
+            interrupt_handle: Some(interrupt_handle),
+        }
+    }
+
+    /// Triggers cancellation of the running query
+    pub fn cancel(&self) {
+        if let Some(handle) = &self.interrupt_handle {
+            handle.interrupt();
+        }
+    }
+}
+
 impl QueryResult {
     /// Creates a new QueryResult from column names and row data
     pub fn new(columns: Vec<String>, rows: Vec<Vec<String>>) -> Self {
@@ -32,12 +102,30 @@ impl QueryResult {
 /// Query execution service that operates on a database connection
 pub struct QueryExecutor<'a> {
     connection: &'a Connection,
+    interrupt_handle: Option<rusqlite::InterruptHandle>,
 }
 
 impl<'a> QueryExecutor<'a> {
     /// Creates a new QueryExecutor for the given connection
     pub fn new(connection: &'a Connection) -> Self {
-        QueryExecutor { connection }
+        QueryExecutor {
+            connection,
+            interrupt_handle: None,
+        }
+    }
+
+    /// Creates a new QueryExecutor with interrupt support for the given connection
+    pub fn with_interrupt(connection: &'a Connection) -> Self {
+        let interrupt_handle = connection.get_interrupt_handle();
+        QueryExecutor {
+            connection,
+            interrupt_handle: Some(interrupt_handle),
+        }
+    }
+
+    /// Returns a reference to the interrupt handle if available
+    pub fn interrupt_handle(&self) -> Option<&rusqlite::InterruptHandle> {
+        self.interrupt_handle.as_ref()
     }
 
     /// Executes a SQL query and returns formatted results
@@ -79,6 +167,50 @@ impl<'a> QueryExecutor<'a> {
             .map_err(|e| TuiqlError::Query(format!("Result processing failed: {}", e)))?;
 
         Ok(QueryResult::new(columns, rows))
+    }
+
+    /// Executes a cancellable SQL query with interrupt capability.
+    ///
+    /// This method executes the query in a way that allows it to be interrupted from another thread.
+    /// The query will be cancelled if an interrupt signal is received, returning an error.
+    ///
+    /// # Arguments
+    ///
+    /// * `sql` - The SQL query to execute
+    ///
+    /// # Returns
+    ///
+    /// Returns the query result if successful, or an error if the query was interrupted or failed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `TuiqlError::Query` if the query fails or is interrupted.
+    pub fn execute_cancellable(&self, sql: &str) -> Result<QueryResult> {
+        if self.interrupt_handle.is_none() {
+            return Err(TuiqlError::Query("Interrupt support not enabled. Use QueryExecutor::with_interrupt() for cancellable queries.".to_string()));
+        }
+
+        self.execute(sql)
+    }
+
+    /// Executes a SQL query with optional cancellation support.
+    ///
+    /// This method allows executing queries that can be interrupted. If cancellation
+    /// support is enabled, the query can be interrupted from another thread.
+    ///
+    /// # Arguments
+    ///
+    /// * `sql` - The SQL query to execute
+    ///
+    /// # Returns
+    ///
+    /// Returns the query result if successful, or an error if the query failed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `TuiqlError::Query` if the query fails.
+    pub fn execute_interruptable(&self, sql: &str) -> Result<QueryResult> {
+        self.execute(sql)
     }
 
     /// Prepares a SQL statement for execution without running it

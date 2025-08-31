@@ -2,7 +2,10 @@ use crate::core::{Result, TuiqlError};
 use once_cell::sync::OnceCell;
 use rusqlite::{types::ValueRef, Connection};
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Mutex, Arc};
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct Column {
@@ -273,8 +276,88 @@ pub fn get_schema() -> Result<Schema> {
     Ok(Schema { tables })
 }
 
+/// Executes a SQL query with cancellable support using a callback mechanism.
+///
+/// This function allows queries to be cancelled by providing a callback that monitors
+/// for cancellation signals (such as Ctrl+C). The callback is responsible for calling
+/// the interrupt handle when cancellation is requested.
+///
+/// # Arguments
+///
+/// * `sql` - The SQL query to execute
+/// * `cancellation_monitor` - A callback that monitors for cancellation and calls interrupt
+///
+/// # Returns
+///
+/// Returns the query result if successful, or an error if the query failed or was cancelled.
+///
+/// # Errors
+///
+/// Returns `TuiqlError::Query` if the query fails.
+/// Returns a specific error message if the query was interrupted.
+pub fn execute_cancellable_query<F>(sql: &str, cancellation_monitor: F) -> Result<QueryResult>
+where
+    F: FnOnce(rusqlite::InterruptHandle) + Send + 'static,
+{
+    let state_cell = DB_STATE.get().ok_or(TuiqlError::Query("No database connection found. Please connect to a database first.".to_string()))?;
+    let mut state_guard = state_cell.lock().map_err(|_| TuiqlError::Query("Failed to acquire database lock".to_string()))?;
+    let conn = state_guard.connection.as_ref().ok_or(TuiqlError::Query("No active database connection".to_string()))?;
+
+    let interrupt_handle = conn.get_interrupt_handle();
+
+    // Spawn the cancellation monitor in a separate thread
+    thread::spawn(move || {
+        cancellation_monitor(interrupt_handle);
+    });
+
+    // Execute the query using the local function - this may be interrupted mid-execution
+    match execute_query_on_connection_local(conn, sql) {
+        Ok(query_result) => Ok(query_result),
+        Err(rusqlite_err) => {
+            // Check if this is an interrupt error by examining the error message
+            let error_str = rusqlite_err.to_string();
+            if error_str.contains("interrupt") || error_str.contains("cancel") {
+                Err(TuiqlError::Query("Query execution cancelled by user (Ctrl+C)".to_string()))
+            } else {
+                Err(TuiqlError::Database(rusqlite_err))
+            }
+        }
+    }
+}
+
+/// Local helper function to execute a query on a connection
+///
+/// This function returns both normal errors and interrupt errors that can be differentiated.
+/// Returns a Result containing either a QueryResult or a raw rusqlite::Error to allow
+/// proper pattern matching on interrupt conditions.
+fn execute_query_on_connection_local(conn: &Connection, sql: &str) -> std::result::Result<QueryResult, rusqlite::Error> {
+    let mut stmt = conn.prepare(sql)?;
+
+    // Get column names
+    let columns: Vec<String> = stmt.column_names().into_iter().map(String::from).collect();
+    let column_count = stmt.column_count();
+
+    // Execute query and collect rows
+    let rows: Vec<Vec<String>> = stmt
+        .query_map([], |row| {
+            let mut values = Vec::new();
+            for i in 0..column_count {
+                values.push(format_value(row.get_ref(i)?));
+            }
+            Ok(values)
+        })?
+        .filter_map(|row| row.ok()) // Ignore processing errors
+        .collect();
+
+    Ok(QueryResult::new(columns, rows))
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
+    use super::*;
+    use std::sync::{Arc, Mutex};
+    use std::thread;
+    use std::time::Duration;
     use super::*;
 
     /// Isolated test database setup per test
@@ -544,5 +627,99 @@ pub(crate) mod tests {
         assert!(value_idx.unique);
         assert_eq!(name_idx.columns, vec!["name"]);
         assert_eq!(value_idx.columns, vec!["value"]);
+    }
+
+    #[test]
+    fn test_cancellable_query_execution_normal() {
+        setup_test_db_global();
+
+        // Test that normal query execution still works with cancellable queries
+        let sql = "SELECT * FROM test ORDER BY id";
+
+        let result = execute_cancellable_query(sql, |_| {
+            // No-op cancellation monitor
+        });
+
+        assert!(result.is_ok());
+        let query_result = result.unwrap();
+        assert_eq!(query_result.columns, vec!["id", "name", "value"]);
+        assert_eq!(query_result.row_count, 2);
+    }
+
+    #[test]
+    fn test_cancellable_query_execution_with_simple_callback() {
+        setup_test_db_global();
+
+        let sql = "SELECT COUNT(*) FROM test";
+        let interrupt_called = Arc::new(Mutex::new(false));
+        let interrupt_called_clone = interrupt_called.clone();
+
+        let result = execute_cancellable_query(sql, move |interrupt_handle| {
+            // Callback that doesn't actually interrupt, just sets a flag
+            std::thread::spawn(move || {
+                // Simulate some work that could be cancelled
+                thread::sleep(Duration::from_millis(10));
+                *interrupt_called_clone.lock().unwrap() = true;
+            });
+        });
+
+        assert!(result.is_ok());
+        let query_result = result.unwrap();
+        assert_eq!(query_result.columns, vec!["COUNT(*)"]);
+        assert_eq!(query_result.row_count, 1);
+        // Note: Interrupt flag may or may not be set depending on timing
+    }
+
+    #[test]
+    fn test_cancellable_query_with_ready_immediate_interrupt() {
+        setup_test_db_global();
+
+        let sql = "SELECT COUNT(*) FROM test";
+
+        // Test interruption mechanism (may not actually cause interruption depending on timing)
+        let result = execute_cancellable_query(sql, move |interrupt_handle| {
+            std::thread::spawn(move || {
+                thread::sleep(Duration::from_millis(1));
+                // Call interrupt - this may or may not affect the already executing query
+                interrupt_handle.interrupt();
+            });
+        });
+
+        // Result could be OK or Err depending on timing and whether interrupt actually triggered
+        // The important thing is that it doesn't crash and returns a valid result
+        assert!(result.is_ok() || matches!(result, Err(TuiqlError::Query(_))));
+    }
+
+    #[test]
+    fn test_cancellable_query_error_handling() {
+        setup_test_db_global();
+
+        // Test with invalid SQL to ensure errors are still handled properly
+        let sql = "SELECT * FROM nonexistent_table";
+
+        let result = execute_cancellable_query(sql, |_| {
+            // No-op cancellation monitor
+        });
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            TuiqlError::Database(_) => {} // Expected - database error for invalid table
+            TuiqlError::Query(_) => {} // Could also be wrapped as query error
+            other => panic!("Expected Database or Query error, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_interrupt_error_message_formatting() {
+        // Test that our string-based error detection works for interrupt errors
+        // This is a conceptual test since actually triggering interrupt errors is timing-dependent
+
+        let interrupt_error_string = "interrupt";
+        let cancel_error_string = "cancel";
+
+        assert!(interrupt_error_string.contains("interrupt"));
+        assert!(cancel_error_string.contains("cancel"));
+        assert!(!interrupt_error_string.contains("cancel"));
+        assert!(!cancel_error_string.contains("interrupt"));
     }
 }

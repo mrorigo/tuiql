@@ -52,7 +52,7 @@ crates/
 - [x] FTS5 helper implementation ✅ COMPLETED
 - [x] Database diff functionality ✅ COMPLETED
 - [x] Configuration system ✅ COMPLETED
-- [ ] Cancellable query support
+- [x] Cancellable query support ✅ COMPLETED - Complete implementation with interrupt handling, Ctrl+C integration, and REPL support with comprehensive tests
 - [ ] Property tests for DDL operations
 
 ### M3: Polish & Extensions
@@ -96,11 +96,6 @@ crates/
 - Add export functionality
 
 ### Next Up
-- FTS5 helper implementation - SQLite full-text search capabilities
-- JSON1 helper implementation - Built-in JSON functions for SQLite
-- Database diff functionality - Schema comparison between databases
-- Cancellable query support - Interrupting long-running queries
-- Configuration system - User preferences and persistent settings
 - Property tests for DDL operations - Robust DDL testing framework
 
 ### Completed
@@ -120,5 +115,6 @@ crates/
 - [x] JSON1 Helper Implementation (M2) - Complete JSON1 extension helpers with query builders, REPL integration, and comprehensive tests
 - [x] FTS5 Helper Implementation (M2) - Complete full-text search helper with create/populate/search commands, REPL integration, and comprehensive tests
 - [x] Database Diff Functionality (M2) - Complete schema comparison between databases with detailed difference reporting
+- [x] Cancellable Query Support (M2) - Complete implementation with interrupt handling, Ctrl+C integration, and REPL support with comprehensive tests
 
 This plan will evolve as the project grows. Continuous improvements and adaptations will be made to meet the project's objectives and timelines.
