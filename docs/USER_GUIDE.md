@@ -3,6 +3,7 @@
 Welcome to TUIQL, a terminal-native SQLite client focused on efficiency and ease of use. TUIQL provides powerful schema analysis, full-text search capabilities, and comprehensive query optimization tools for professional SQLite development and data exploration.
 
 **Key Features:**
+- 🔧 Configuration system with XDG Base Directory support and automatic defaults
 - 🔍 Comprehensive schema visualization with ER diagrams
 - 🔍 Full-text search with FTS5 support and advanced ranking
 - 📊 Query plan analysis and optimization insights
@@ -23,9 +24,10 @@ This guide will help you unlock the full potential of TUIQL's features for effec
    - [Database Modes](#database-modes)
    - [Schema Exploration](#schema-exploration)
    - [Full-Text Search (FTS5)](#full-text-search-fts5)
-5. [Tips and Best Practices](#tips-and-best-practices)
-6. [Troubleshooting](#troubleshooting)
-7. [Future Features](#future-features-m2-development-in-progress)
+5. [Configuration](#configuration)
+6. [Tips and Best Practices](#tips-and-best-practices)
+7. [Troubleshooting](#troubleshooting)
+8. [Future Features](#future-features-m2-development-in-progress)
 
 ## Getting Started
 
@@ -282,11 +284,13 @@ If you encounter issues:
 The following advanced features are currently being developed:
 
 ### In Development (M2 Features)
-- **JSON1 Helper**: SQLite's built-in JSON functions for structured data handling
-- **Database Diff**: Compare and merge schema differences between databases
-- **Configuration System**: User preferences and persistent settings
 - **Cancellable Queries**: Interrupt long-running database operations
 - **Property Tests**: Comprehensive DDL validation framework
+
+### Recently Completed (M2 Features)
+- ✅ **Configuration System**: TOML configuration with XDG Base Directory support, automatic config creation, and application-wide settings
+- ✅ **JSON1 Helper**: SQLite's built-in JSON functions for structured data handling
+- ✅ **Database Diff**: Compare and merge schema differences between databases
 
 ### Planned Features
 - **Advanced Query Editor**: Syntax highlighting, error detection, and formatting
@@ -304,5 +308,34 @@ The following advanced features are currently being developed:
 📊 **Advanced Query Analysis**: Interactive query plan visualization
 🎯 **Enhanced REPL**: Intelligent completions and comprehensive help system
 🚶 **Reedline Professional Interface**: Full terminal editing with Ctrl+R history search, persistent storage, and advanced keyboard navigation
+
+## Configuration
+
+TUIQL supports user configuration via a TOML file located in the XDG Base Directory specification path (`$XDG_CONFIG_HOME/tuiql/config.toml`, typically `~/.config/tuiql/config.toml`). If no configuration file exists, TUIQL automatically creates one with sensible defaults.
+
+### Configuration Sections
+
+The configuration file supports the following sections:
+
+```toml
+[ui]
+theme = "dark"              # Interface theme (currently unused, future feature)
+show_status_tips = true     # Show status line tips (currently unused, future feature)
+
+[keys]
+run = "F5"                  # Key binding for running queries (currently unused, future feature)
+run_selection = "S-F5"      # Key binding for running selection (currently unused, future feature)
+vim_mode = true             # Enable Vim-style key bindings (currently unused, future feature)
+
+[sqlite]
+load_extensions = []        # List of SQLite extensions to load on startup (currently unused, future feature)
+page_size_hint = 4096       # Page size hint for SQLite connections (currently unused, future feature)
+```
+
+### Editing Configuration
+
+1. **Manual Editing**: Edit `~/.config/tuiql/config.toml` directly with your preferred text editor
+2. **Automatic Creation**: If the file doesn't exist, TUIQL will create it with default values on first startup
+3. **Runtime Update**: Currently changes require restarting TUIQL (this will be improved in future versions)
 
 Stay tuned for ongoing development updates! New features are being added regularly.
