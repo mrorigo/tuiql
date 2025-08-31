@@ -1,0 +1,9 @@
+---
+source: src/record_inspector.rs
+expression: inspector.preview_record()
+---
+{
+  "age": "28",
+  "city": "London",
+  "name": "Charlie",
+}

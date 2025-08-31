@@ -1,0 +1,53 @@
+---
+source: src/schema_map.rs
+expression: output
+---
+=== Database Schema Map (Auto-layout ER Diagram) ===
+
+📋 Table: categories
+  🔑 Primary Keys: id
+  📝 Columns:
+    - id INTEGER
+    - name TEXT
+  ↙ Referenced by 1 table(s)
+
+📋 Table: orders
+  🔑 Primary Keys: id
+  📝 Columns:
+    - id INTEGER
+    - user_id INTEGER
+  🔗 References:
+    → products (product_id → id)
+
+📋 Table: posts
+  🔑 Primary Keys: id
+  📝 Columns:
+    - id INTEGER
+    - user_id INTEGER
+
+📋 Table: products
+  🔑 Primary Keys: id
+  📝 Columns:
+    - id INTEGER
+    - category_id INTEGER
+  🔗 References:
+    → categories (category_id → id)
+  ↙ Referenced by 1 table(s)
+
+📋 Table: users
+  🔑 Primary Keys: id
+  📝 Columns:
+    - id INTEGER
+    - name TEXT
+  🔗 References:
+    → orders ()
+    → posts ()
+  ↙ Referenced by 2 table(s)
+
+=== Relationship Overview ===
+orders → users (user_id → id)
+orders → products (product_id → id)
+posts → users (user_id → id)
+products → categories (category_id → id)
+
+=== End Schema Map ===

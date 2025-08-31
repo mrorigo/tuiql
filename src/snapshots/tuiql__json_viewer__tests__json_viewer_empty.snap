@@ -1,0 +1,5 @@
+---
+source: src/json_viewer.rs
+expression: viewer.render()
+---
+No JSON data loaded

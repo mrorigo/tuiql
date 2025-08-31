@@ -1,0 +1,9 @@
+---
+source: src/results_grid.rs
+expression: grid.render()
+---
+ID | Name | Age
+-----|--------|------
+1 | Alice | 25
+2 | Bob | 30
+3 | Charlie | 35

@@ -1,6 +1,6 @@
 use crate::core::{Result, TuiqlError};
 use crate::db;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 /*
  * Schema Map Module for ER-like Diagram Visualization
@@ -271,8 +271,8 @@ pub fn render_schema_map(map: &SchemaMap) -> String {
         diagram.push_str("=== Relationship Overview ===\n");
 
         // Group relationships by from_table for better display
-        let mut relationships_by_from: std::collections::HashMap<String, Vec<&Relationship>> =
-            std::collections::HashMap::new();
+        let mut relationships_by_from: std::collections::BTreeMap<String, Vec<&Relationship>> =
+            std::collections::BTreeMap::new();
 
         for rel in &map.relationships {
             relationships_by_from.entry(rel.from_table.clone()).or_default().push(rel);
@@ -320,6 +320,7 @@ pub fn render_schema_map(map: &SchemaMap) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use insta::assert_snapshot;
 
     #[test]
     fn test_render_schema_map_no_tables() {
@@ -526,5 +527,167 @@ mod tests {
         assert!(output.contains("Table: users"));
         assert!(output.contains("Table: orders"));
         assert!(output.contains("Table: products"));
+    }
+
+    #[test]
+    fn test_render_schema_map_golden_simple_relationship() {
+        let map = SchemaMap {
+            tables: vec![
+                TableNode {
+                    name: "users".to_string(),
+                    columns: vec!["id INTEGER PRIMARY KEY".to_string(), "name TEXT".to_string(), "email TEXT".to_string()],
+                    primary_keys: vec!["id".to_string()],
+                    outgoing_references: vec!["orders".to_string()],
+                },
+                TableNode {
+                    name: "orders".to_string(),
+                    columns: vec!["id INTEGER PRIMARY KEY".to_string(), "user_id INTEGER".to_string(), "amount REAL".to_string()],
+                    primary_keys: vec!["id".to_string()],
+                    outgoing_references: vec![],
+                },
+            ],
+            relationships: vec![
+                Relationship {
+                    from_table: "orders".to_string(),
+                    from_column: "user_id".to_string(),
+                    to_table: "users".to_string(),
+                    to_column: "id".to_string(),
+                }
+            ],
+        };
+        let output = render_schema_map(&map);
+        assert_snapshot!("schema_map_simple_relationship", output);
+    }
+
+    #[test]
+    fn test_render_schema_map_golden_complex_relationships() {
+        let map = SchemaMap {
+            tables: vec![
+                TableNode {
+                    name: "users".to_string(),
+                    columns: vec!["id INTEGER".to_string(), "name TEXT".to_string()],
+                    primary_keys: vec!["id".to_string()],
+                    outgoing_references: vec!["orders".to_string(), "posts".to_string()],
+                },
+                TableNode {
+                    name: "orders".to_string(),
+                    columns: vec!["id INTEGER".to_string(), "user_id INTEGER".to_string()],
+                    primary_keys: vec!["id".to_string()],
+                    outgoing_references: vec!["products".to_string()],
+                },
+                TableNode {
+                    name: "posts".to_string(),
+                    columns: vec!["id INTEGER".to_string(), "user_id INTEGER".to_string()],
+                    primary_keys: vec!["id".to_string()],
+                    outgoing_references: vec![],
+                },
+                TableNode {
+                    name: "products".to_string(),
+                    columns: vec!["id INTEGER".to_string(), "category_id INTEGER".to_string()],
+                    primary_keys: vec!["id".to_string()],
+                    outgoing_references: vec!["categories".to_string()],
+                },
+                TableNode {
+                    name: "categories".to_string(),
+                    columns: vec!["id INTEGER".to_string(), "name TEXT".to_string()],
+                    primary_keys: vec!["id".to_string()],
+                    outgoing_references: vec![],
+                },
+            ],
+            relationships: vec![
+                Relationship {
+                    from_table: "orders".to_string(),
+                    from_column: "user_id".to_string(),
+                    to_table: "users".to_string(),
+                    to_column: "id".to_string(),
+                },
+                Relationship {
+                    from_table: "posts".to_string(),
+                    from_column: "user_id".to_string(),
+                    to_table: "users".to_string(),
+                    to_column: "id".to_string(),
+                },
+                Relationship {
+                    from_table: "orders".to_string(),
+                    from_column: "product_id".to_string(),
+                    to_table: "products".to_string(),
+                    to_column: "id".to_string(),
+                },
+                Relationship {
+                    from_table: "products".to_string(),
+                    from_column: "category_id".to_string(),
+                    to_table: "categories".to_string(),
+                    to_column: "id".to_string(),
+                },
+            ],
+        };
+        let output = render_schema_map(&map);
+        assert_snapshot!("schema_map_complex_relationships", output);
+    }
+
+    #[test]
+    fn test_render_schema_map_golden_no_relationships() {
+        let map = SchemaMap {
+            tables: vec![
+                TableNode {
+                    name: "users".to_string(),
+                    columns: vec!["id INTEGER".to_string(), "name TEXT".to_string()],
+                    primary_keys: vec!["id".to_string()],
+                    outgoing_references: vec![],
+                },
+                TableNode {
+                    name: "logs".to_string(),
+                    columns: vec!["timestamp DATETIME".to_string(), "message TEXT".to_string()],
+                    primary_keys: vec![],
+                    outgoing_references: vec![],
+                },
+            ],
+            relationships: vec![],
+        };
+        let output = render_schema_map(&map);
+        assert_snapshot!("schema_map_no_relationships", output);
+    }
+
+    #[test]
+    fn test_render_schema_map_golden_circular_reference() {
+        let map = SchemaMap {
+            tables: vec![
+                TableNode {
+                    name: "users".to_string(),
+                    columns: vec!["id INTEGER".to_string()],
+                    primary_keys: vec!["id".to_string()],
+                    outgoing_references: vec!["posts".to_string()],
+                },
+                TableNode {
+                    name: "posts".to_string(),
+                    columns: vec!["id INTEGER".to_string(), "user_id INTEGER".to_string(), "parent_post_id INTEGER".to_string()],
+                    primary_keys: vec!["id".to_string()],
+                    outgoing_references: vec!["users".to_string(), "posts".to_string()], // Circular
+                },
+            ],
+            relationships: vec![
+                Relationship {
+                    from_table: "posts".to_string(),
+                    from_column: "user_id".to_string(),
+                    to_table: "users".to_string(),
+                    to_column: "id".to_string(),
+                },
+                Relationship {
+                    from_table: "posts".to_string(),
+                    from_column: "parent_post_id".to_string(),
+                    to_table: "posts".to_string(),
+                    to_column: "id".to_string(),
+                },
+                // Add reverse relationship to create circular
+                Relationship {
+                    from_table: "users".to_string(),
+                    from_column: "main_post_id".to_string(),
+                    to_table: "posts".to_string(),
+                    to_column: "id".to_string(),
+                },
+            ],
+        };
+        let output = render_schema_map(&map);
+        assert_snapshot!("schema_map_circular_reference", output);
     }
 }

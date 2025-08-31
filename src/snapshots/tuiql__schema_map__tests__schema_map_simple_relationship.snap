@@ -1,0 +1,27 @@
+---
+source: src/schema_map.rs
+expression: output
+---
+=== Database Schema Map (Auto-layout ER Diagram) ===
+
+📋 Table: orders
+  🔑 Primary Keys: id
+  📝 Columns:
+    - id INTEGER PRIMARY KEY
+    - user_id INTEGER
+    - amount REAL
+
+📋 Table: users
+  🔑 Primary Keys: id
+  📝 Columns:
+    - id INTEGER PRIMARY KEY
+    - name TEXT
+    - email TEXT
+  🔗 References:
+    → orders ()
+  ↙ Referenced by 1 table(s)
+
+=== Relationship Overview ===
+orders → users (user_id → id)
+
+=== End Schema Map ===

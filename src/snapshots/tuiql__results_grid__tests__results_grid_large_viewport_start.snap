@@ -1,0 +1,11 @@
+---
+source: src/results_grid.rs
+expression: grid.render()
+---
+Col1 | Col2
+-------|-------
+0 | Value0
+1 | Value1
+2 | Value2
+3 | Value3
+4 | Value4

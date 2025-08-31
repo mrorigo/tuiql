@@ -1,0 +1,35 @@
+---
+source: src/schema_map.rs
+expression: output
+---
+=== Database Schema Map (Auto-layout ER Diagram) ===
+
+📋 Table: posts
+  🔑 Primary Keys: id
+  📝 Columns:
+    - id INTEGER
+    - user_id INTEGER
+    - parent_post_id INTEGER
+  🔗 References:
+    → users (user_id → id)
+    → posts (parent_post_id → id)
+  ↙ Referenced by 2 table(s)
+
+📋 Table: users
+  🔑 Primary Keys: id
+  📝 Columns:
+    - id INTEGER
+  🔗 References:
+    → posts (main_post_id → id)
+  ↙ Referenced by 1 table(s)
+
+=== Relationship Overview ===
+posts → users (user_id → id)
+posts → posts (parent_post_id → id)
+users → posts (main_post_id → id)
+
+⚠️  Circular References:
+  posts <-> posts
+  posts <-> users
+
+=== End Schema Map ===

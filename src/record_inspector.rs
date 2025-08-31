@@ -9,20 +9,20 @@
 
 use crate::core::{Result, TuiqlError};
 use regex::Regex;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use crate::json_viewer::JsonTreeViewer;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Record {
     // A record is a mapping from column names to string values.
-    pub fields: HashMap<String, String>,
+    pub fields: BTreeMap<String, String>,
 }
 
 impl Record {
     /// Creates a new, empty record.
     pub fn new() -> Self {
         Record {
-            fields: HashMap::new(),
+            fields: BTreeMap::new(),
         }
     }
 
@@ -41,7 +41,7 @@ impl Record {
 /// It automatically detects JSON fields and provides tree view visualization for them.
 pub struct RecordInspector {
     pub record: Record,
-    json_viewers: HashMap<String, JsonTreeViewer>, // JSON viewers for JSON fields
+    json_viewers: BTreeMap<String, JsonTreeViewer>, // JSON viewers for JSON fields
 }
 
 impl RecordInspector {
@@ -49,7 +49,7 @@ impl RecordInspector {
     pub fn new() -> Self {
         RecordInspector {
             record: Record::new(),
-            json_viewers: HashMap::new(),
+            json_viewers: BTreeMap::new(),
         }
     }
 
@@ -155,6 +155,7 @@ impl RecordInspector {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use insta::assert_snapshot;
 
     #[test]
     fn test_record_set_and_get() {
@@ -173,7 +174,7 @@ mod tests {
         record.set_field("name", "Bob");
         let inspector = RecordInspector {
             record,
-            json_viewers: HashMap::new(),
+            json_viewers: BTreeMap::new(),
         };
         let view = inspector.view_record();
         // The output should contain both keys and their corresponding values.
@@ -187,7 +188,7 @@ mod tests {
         record.set_field("name", "Charlie");
         let mut inspector = RecordInspector {
             record,
-            json_viewers: HashMap::new(),
+            json_viewers: BTreeMap::new(),
         };
         let result = inspector.edit_field("name", "Charles");
         assert!(result.unwrap());
@@ -202,7 +203,7 @@ mod tests {
         let record = Record::new();
         let mut inspector = RecordInspector {
             record,
-            json_viewers: HashMap::new(),
+            json_viewers: BTreeMap::new(),
         };
 
         // Test invalid field validation - field doesn't exist so it should fail before validation
@@ -245,7 +246,7 @@ mod tests {
         }
         let inspector = RecordInspector {
             record,
-            json_viewers: HashMap::new(),
+            json_viewers: BTreeMap::new(),
         };
 
         let start = std::time::Instant::now();
@@ -286,7 +287,84 @@ mod tests {
 
         let view = inspector.view_record();
         // Invalid JSON should be displayed as regular text
-        assert!(view.contains("data: {\"invalid\": json}"));
+        assert!(view.contains(r#"data: {"invalid": json}"#));
         assert!(view.contains("name: Bob"));
+    }
+
+    #[test]
+    fn test_view_record_golden_simple_record() {
+        let mut record = Record::new();
+        record.set_field("id", "1");
+        record.set_field("name", "Alice Johnson");
+        record.set_field("email", "alice@example.com");
+        record.set_field("active", "true");
+
+        let inspector = RecordInspector {
+            record,
+            json_viewers: BTreeMap::new(),
+        };
+
+        assert_snapshot!("record_inspector_simple_record", inspector.view_record());
+    }
+
+    #[test]
+    fn test_view_record_golden_with_json_field() {
+        let mut record = Record::new();
+        record.set_field("id", "1");
+        record.set_field("name", "Bob Smith");
+        record.set_field("profile", r#"{
+            "age": 30,
+            "interests": ["coding", "music"],
+            "address": {
+                "city": "San Francisco",
+                "country": "USA"
+            }
+        }"#);
+
+        let mut inspector = RecordInspector::new();
+        inspector.load_record(record);
+
+        assert_snapshot!("record_inspector_with_json_field", inspector.view_record());
+    }
+
+    #[test]
+    fn test_view_record_golden_mixed_fields() {
+        let mut record = Record::new();
+        record.set_field("user_id", "123");
+        record.set_field("username", "testuser");
+        record.set_field("settings", r#"{"theme": "dark", "notifications": true}"#);
+        record.set_field("tags", r#"["rust", "developer", "open-source"]"#);
+        record.set_field("bio", "A passionate Rust developer");
+
+        let mut inspector = RecordInspector::new();
+        inspector.load_record(record);
+
+        assert_snapshot!("record_inspector_mixed_fields", inspector.view_record());
+    }
+
+    #[test]
+    fn test_view_record_golden_empty_record() {
+        let record = Record::new();
+        let inspector = RecordInspector {
+            record,
+            json_viewers: BTreeMap::new(),
+        };
+
+        assert_snapshot!("record_inspector_empty_record", inspector.view_record());
+    }
+
+    #[test]
+    fn test_preview_record_golden() {
+        let mut record = Record::new();
+        record.set_field("name", "Charlie");
+        record.set_field("age", "28");
+        record.set_field("city", "London");
+
+        let inspector = RecordInspector {
+            record,
+            json_viewers: BTreeMap::new(),
+        };
+
+        assert_snapshot!("record_inspector_preview", inspector.preview_record());
     }
 }

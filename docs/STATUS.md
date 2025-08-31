@@ -22,6 +22,7 @@ This document tracks the current status of the TUIQL project, including complete
 - ✅ **Dangerous operation linting system**: Enhanced linting with sophisticated SQL parsing for DML/DDL operations, implicit JOINs, uncommitted transactions with REPL integration
 - ✅ **ER diagram auto-layout refinements**: Enhanced schema map visualization with connectivity-based table grouping, improved organization for complex schemas, and categorized layout headers ("Highly Connected Tables" vs "Independent Tables")
 - ✅ **Code Quality Improvements**: Significant reduction in compiler warnings (>50% reduction), fixed unused variables and imports, improved code maintainability
+- ✅ **Golden Tests Implementation**: Complete implementation with 18 snapshot tests for ResultsGrid, JsonViewer, RecordInspector, and SchemaMap with deterministic rendering using BTreeMap for consistent field ordering
 - Performance optimization
 - Cross-platform testing
 - Documentation completion
@@ -71,8 +72,10 @@ This document tracks the current status of the TUIQL project, including complete
     - SQL completion system tests implemented with 5/5 passing
     - Query plan visualization tests implemented with 4/4 passing
     - Test concurrency isolation implemented and verified
-  - **Ongoing Work:**
-    - Implementing golden tests for TUI components
+  - **Completed:**
+    - Golden tests for TUI components implemented with 18 comprehensive snapshot tests covering ResultsGrid, JsonViewer, RecordInspector, and SchemaMap
+    - Added insta dependency for snapshot testing
+    - Fixed non-deterministic ordering issues by using BTreeMap for consistent field/relationship order
 
   - **Feature Enhancements:**
     - Database connection and REPL command handling complete ✅

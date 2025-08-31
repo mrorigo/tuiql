@@ -1,0 +1,9 @@
+---
+source: src/json_viewer.rs
+expression: viewer.render()
+---
+▶ 📂 root: {4 object}
+    ✓ active: true
+    # age: 30
+    " name: "Alice"
+    ∅ score: null

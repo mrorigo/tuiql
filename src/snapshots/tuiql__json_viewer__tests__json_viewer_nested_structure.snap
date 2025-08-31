@@ -1,0 +1,13 @@
+---
+source: src/json_viewer.rs
+expression: viewer.render()
+---
+▶ 📂 root: {2 object}
+    📂 company: {3 object}
+      📁 departments: [2 items]
+      📁 location: {2 object}
+      " name: "TechCorp"
+    📂 tags: [3 items]
+      " 0: "startup"
+      " 1: "tech"
+      " 2: "innovative"

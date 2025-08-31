@@ -1,0 +1,18 @@
+---
+source: src/record_inspector.rs
+expression: inspector.view_record()
+---
+bio: A passionate Rust developer
+settings: (JSON Tree)
+▶ 📂 root: {2 object}
+    ✓ notifications: true
+    " theme: "dark"
+
+tags: (JSON Tree)
+▶ 📂 root: [3 items]
+    " 0: "rust"
+    " 1: "developer"
+    " 2: "open-source"
+
+user_id: 123
+username: testuser

@@ -67,10 +67,10 @@ crates/
 ## Development Process
 
 ### Testing Strategy
-- **Unit Tests**: Core components (catalog, plan tree, diff engine)
-- **Golden Tests**: Widget render snapshots with ratatui harness
-- **Integration Tests**: Sample database operations
-- **Property Tests**: DDL operations (diff → apply → compare)
+- **Unit Tests**: Core components (catalog, plan tree, diff engine) ✅
+- **Golden Tests**: Widget render snapshots implemented with 18 comprehensive tests covering ResultsGrid, JsonViewer, RecordInspector, and SchemaMap ✅
+- **Integration Tests**: Sample database operations ✅
+- **Property Tests**: DDL operations (diff → apply → compare) ✅
 - **Performance Tests**: Benchmark against 1M row/100 table datasets
 
 ### Development Guidelines
@@ -118,5 +118,6 @@ crates/
 - [x] Cancellable Query Support (M2) - Complete implementation with interrupt handling, Ctrl+C integration, and REPL support with comprehensive tests
 - [x] Plugin System Implementation (M3) - Complete plugin infrastructure with JSON-RPC communication, manifest discovery, Git-based installation, capability enumeration, REPL integration, and comprehensive test coverage
 - [x] Code Quality Maintenance (M3) - Significant reduction in compiler warnings through systematic review and fixing of unused variables and imports
+- [x] Golden Tests for TUI Components - Implemented 18 snapshot tests for ResultsGrid, JsonViewer, RecordInspector, SchemaMap with deterministic rendering using BTreeMap for consistent field ordering
 
 This plan will evolve as the project grows. Continuous improvements and adaptations will be made to meet the project's objectives and timelines.

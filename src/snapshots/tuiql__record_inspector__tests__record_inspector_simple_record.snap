@@ -1,0 +1,8 @@
+---
+source: src/record_inspector.rs
+expression: inspector.view_record()
+---
+active: true
+email: alice@example.com
+id: 1
+name: Alice Johnson

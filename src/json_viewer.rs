@@ -280,6 +280,7 @@ fn toggle_node_expanded(node: &mut JsonNode, target_path: &[String]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use insta::assert_snapshot;
 
     #[test]
     fn test_load_simple_json() {
@@ -376,5 +377,54 @@ mod tests {
         } else {
             panic!("Expected array");
         }
+    }
+
+    #[test]
+    fn test_render_golden_simple_object() {
+        let mut viewer = JsonTreeViewer::new();
+        viewer.load_json(r#"{"name": "Alice", "age": 30, "active": true, "score": null}"#).unwrap();
+        assert_snapshot!("json_viewer_simple_object", viewer.render());
+    }
+
+    #[test]
+    fn test_render_golden_nested_structure() {
+        let mut viewer = JsonTreeViewer::new();
+        viewer.load_json(r#"{
+            "company": {
+                "name": "TechCorp",
+                "departments": [
+                    {"name": "Engineering", "employees": 25},
+                    {"name": "Sales", "employees": 15}
+                ],
+                "location": {"city": "San Francisco", "state": "CA"}
+            },
+            "tags": ["startup", "tech", "innovative"]
+        }"#).unwrap();
+        assert_snapshot!("json_viewer_nested_structure", viewer.render());
+    }
+
+    #[test]
+    fn test_render_golden_array() {
+        let mut viewer = JsonTreeViewer::new();
+        viewer.load_json(r#"[
+            {"id": 1, "product": "Laptop", "price": 999.99},
+            {"id": 2, "product": "Mouse", "price": 29.99},
+            {"id": 3, "product": "Keyboard", "price": 79.99}
+        ]"#).unwrap();
+        assert_snapshot!("json_viewer_array", viewer.render());
+    }
+
+    #[test]
+    fn test_render_golden_empty_viewer() {
+        let viewer = JsonTreeViewer::new();
+        assert_snapshot!("json_viewer_empty", viewer.render());
+    }
+
+    #[test]
+    fn test_render_golden_with_focus() {
+        let mut viewer = JsonTreeViewer::new();
+        viewer.load_json(r#"{"root": {"child1": "value1", "child2": {"grandchild": "value2"}}}"#).unwrap();
+        viewer.set_focus(vec!["root".to_string(), "child2".to_string(), "grandchild".to_string()]);
+        assert_snapshot!("json_viewer_with_focus", viewer.render());
     }
 }

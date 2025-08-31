@@ -187,6 +187,7 @@ impl ResultsGrid {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use insta::assert_snapshot;
 
     #[test]
     fn test_render_empty_grid() {
@@ -204,6 +205,53 @@ mod tests {
         assert!(rendered.contains("ID | Name"));
         assert!(rendered.contains("1 | Alice"));
         assert!(rendered.contains("2 | Bob"));
+    }
+
+    #[test]
+    fn test_render_golden_empty_grid() {
+        let grid = ResultsGrid::new();
+        assert_snapshot!("results_grid_empty", grid.render());
+    }
+
+    #[test]
+    fn test_render_golden_with_data() {
+        let mut grid = ResultsGrid::new();
+        grid.set_headers(vec!["ID".to_string(), "Name".to_string(), "Age".to_string()]);
+        grid.add_row(vec!["1".to_string(), "Alice".to_string(), "25".to_string()]);
+        grid.add_row(vec!["2".to_string(), "Bob".to_string(), "30".to_string()]);
+        grid.add_row(vec!["3".to_string(), "Charlie".to_string(), "35".to_string()]);
+        assert_snapshot!("results_grid_with_data", grid.render());
+    }
+
+    #[test]
+    fn test_render_golden_no_headers() {
+        let mut grid = ResultsGrid::new();
+        grid.add_row(vec!["1".to_string(), "Alice".to_string()]);
+        grid.add_row(vec!["2".to_string(), "Bob".to_string()]);
+        assert_snapshot!("results_grid_no_headers", grid.render());
+    }
+
+    #[test]
+    fn test_render_golden_large_viewport() {
+        let mut grid = ResultsGrid::new();
+        grid.set_headers(vec!["Col1".to_string(), "Col2".to_string()]);
+
+        // Add many rows to test viewport rendering
+        for i in 0..15 {
+            grid.add_row(vec![format!("{}", i), format!("Value{}", i)]);
+        }
+
+        // Set viewport to show first 5 rows
+        grid.viewport = Viewport::new(0, 5);
+        assert_snapshot!("results_grid_large_viewport_start", grid.render());
+
+        // Scroll down
+        grid.viewport = Viewport::new(5, 10);
+        assert_snapshot!("results_grid_large_viewport_middle", grid.render());
+
+        // Scroll to end
+        grid.viewport = Viewport::new(10, 15);
+        assert_snapshot!("results_grid_large_viewport_end", grid.render());
     }
 
     #[test]

@@ -1,0 +1,25 @@
+---
+source: src/schema_map.rs
+expression: output
+---
+=== Database Schema Map (Auto-layout ER Diagram) ===
+
+📂 Group 1: Highly Connected Tables
+📋 Table: users
+  🔑 Primary Keys: id
+  📝 Columns:
+    - id INTEGER
+    - name TEXT
+
+
+📂 Group 2: Highly Connected Tables
+📋 Table: logs
+  📝 Columns:
+    - timestamp DATETIME
+    - message TEXT
+
+
+
+No relationships found between tables.
+
+=== End Schema Map ===

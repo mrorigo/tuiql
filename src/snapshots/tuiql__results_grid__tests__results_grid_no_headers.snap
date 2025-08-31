@@ -1,0 +1,6 @@
+---
+source: src/results_grid.rs
+expression: grid.render()
+---
+1 | Alice
+2 | Bob

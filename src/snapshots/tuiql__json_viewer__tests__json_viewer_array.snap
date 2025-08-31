@@ -1,0 +1,17 @@
+---
+source: src/json_viewer.rs
+expression: viewer.render()
+---
+▶ 📂 root: [3 items]
+    📂 0: {3 object}
+      # id: 1
+      # price: 999.99
+      " product: "Laptop"
+    📂 1: {3 object}
+      # id: 2
+      # price: 29.99
+      " product: "Mouse"
+    📂 2: {3 object}
+      # id: 3
+      # price: 79.99
+      " product: "Keyboard"

@@ -1,0 +1,15 @@
+---
+source: src/record_inspector.rs
+expression: inspector.view_record()
+---
+id: 1
+name: Bob Smith
+profile: (JSON Tree)
+▶ 📂 root: {3 object}
+    📂 address: {2 object}
+      " city: "San Francisco"
+      " country: "USA"
+    # age: 30
+    📂 interests: [2 items]
+      " 0: "coding"
+      " 1: "music"

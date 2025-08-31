@@ -1,0 +1,8 @@
+---
+source: src/json_viewer.rs
+expression: viewer.render()
+---
+  📂 root: {1 object}
+    📂 root: {2 object}
+      " child1: "value1"
+      📁 child2: {1 object}

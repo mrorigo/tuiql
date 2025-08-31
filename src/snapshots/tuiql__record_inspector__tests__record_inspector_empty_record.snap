@@ -1,0 +1,5 @@
+---
+source: src/record_inspector.rs
+expression: inspector.view_record()
+---
+
