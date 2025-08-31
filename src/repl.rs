@@ -4,6 +4,7 @@ use crate::{
     plan, fts5, json1, sql_completer::SqlCompleter, diff,
     results_grid::ResultsGrid,
     plugins::PluginManager,
+    query_editor::QueryEditor,
 };
 use crate::config::load_or_create_config;
 use std::sync::mpsc;
@@ -465,6 +466,26 @@ pub fn run_repl() {
                 if sql.trim().is_empty() {
                     continue;
                 }
+
+                // LINT: Check for dangerous operations before execution
+                let mut editor = QueryEditor::new();
+                editor.set_query(&sql);
+                if let Err(lint_err) = editor.lint_query() {
+                    eprintln!("⚠️  Linting Warning: {}", lint_err);
+                    println!("Do you want to continue anyway? (y/N): ");
+
+                    // Read user confirmation
+                    let mut confirmation = String::new();
+                    if std::io::stdin().read_line(&mut confirmation).is_err() {
+                        continue; // Failed to read input, skip execution
+                    }
+
+                    if !confirmation.trim().to_lowercase().starts_with('y') {
+                        println!("Query execution cancelled.");
+                        continue;
+                    }
+                }
+
                 let start_time = Instant::now();
 
                 // Mark that we're executing a query
