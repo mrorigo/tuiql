@@ -241,19 +241,26 @@ pub fn list_fts5_tables() -> Result<Vec<String>> {
 pub fn fts5_help() -> String {
     format!(
         "🎯 SQLite FTS5 (Full-Text Search v5) Helper\n\n\
-         FTS5 allows efficient natural language searching across your content.\n\n\
-         📝 USAGE EXAMPLES:\n\
-         • Create FTS5 table: CREATE VIRTUAL TABLE docs_fts USING fts5(title, content, content='documents');\n\
-         • Insert content: INSERT INTO docs_fts(rowid, title, content) VALUES (1, 'Title', 'Document body');\n\
-         • Search: SELECT * FROM docs_fts WHERE docs_fts MATCH 'database search';\n\
-         • Ranked search: SELECT rank FROM docs_fts WHERE docs_fts MATCH 'query' ORDER BY rank;\n\n\
-         🔧 COMMON FTS5 FEATURES:\n\
-         • Phrase search: 'database operations'\n\
-         • Prefix search: 'data*'\n\
-         • NEAR queries: 'database NEAR optimization'\n\
-         • Boolean operators: 'database OR searching'\n\
-         • BM25 ranking: Built-in relevance scoring\n\n\
-         💡 TIP: FTS5 tables are automatically maintained when you update content tables."
+          FTS5 allows efficient natural language searching across your content.\n\n\
+          📝 USAGE EXAMPLES:\n\
+          • Create FTS5 table: :fts5 create <content_table> <fts_table> <columns>\n\
+          • Populate FTS5 table: :fts5 populate <fts_table>\n\
+          • Search content: :fts5 search <fts_table> <query> [limit]\n\
+          • List FTS5 tables: :fts5 list\n\n\
+          🔧 COMMAND SYNTAX:\n\
+          • :fts5 create <content> <fts_name> <col1,col2> - Create FTS5 virtual table\n\
+          • :fts5 populate <fts_name> - Index content from content table\n\
+          • :fts5 search <fts_name> 'query' [N] - Search with BM25 ranking\n\
+          • :fts5 list - Show all FTS5 tables in database\n\
+          • :fts5 help - Show this help text\n\n\
+          🔍 SEARCH FEATURES:\n\
+          • Phrase search: 'database operations'\n\
+          • Prefix search: 'data*'\n\
+          • NEAR queries: 'database NEAR optimization'\n\
+          • Boolean operators: 'database OR searching'\n\
+          • BM25 ranking: Built-in relevance scoring\n\n\
+          💡 TIP: FTS5 tables are automatically maintained when you update content tables.\n\
+          💡 NOTE: Your content table must have an 'id' column as the primary key."
     )
 }
 
@@ -289,7 +296,9 @@ mod tests {
         let help = fts5_help();
         assert!(help.contains("FTS5"));
         assert!(help.contains("USAGE EXAMPLES"));
-        assert!(help.contains("CREATE VIRTUAL TABLE"));
+        assert!(help.contains(":fts5 create"));
+        assert!(help.contains(":fts5 populate"));
+        assert!(help.contains(":fts5 search"));
     }
 
     #[test]
@@ -322,4 +331,134 @@ mod tests {
         // Should fail gracefully without database connection
         assert!(result.is_err() || result.unwrap().is_empty());
     }
+}
+/// Executes FTS5 analysis and commands in the REPL
+///
+/// # Arguments
+///
+/// * `command` - Complete fts5 command (e.g., "create table columns", "populate table", etc.)
+///
+/// # Returns
+///
+/// Result indicating success
+///
+pub fn execute_fts5_command(command: &str) -> Result<()> {
+    let parts: Vec<&str> = command.split_whitespace().collect();
+
+    if parts.is_empty() {
+        println!("{}", fts5_help());
+        return Ok(());
+    }
+
+    match parts[0] {
+        "help" => {
+            println!("{}", fts5_help());
+        }
+        "list" => {
+            match list_fts5_tables() {
+                Ok(_) => {},
+                Err(e) => println!("❌ Error listing FTS5 tables: {}", e),
+            }
+        }
+        "create" => {
+            if parts.len() < 4 {
+                println!("❌ Usage: :fts5 create <content_table> <fts_table> <columns>");
+                println!("Example: :fts5 create documents docs_fts title,content");
+                println!("Note: Assumes content_table has an 'id' primary key column");
+                return Ok(());
+            }
+
+            let content_table = parts[1];
+            let fts_table = parts[2];
+            let columns_str = parts[3];
+
+            // Parse columns from comma-separated list
+            let column_names: Vec<String> = columns_str
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+
+            if column_names.is_empty() {
+                println!("❌ No valid column names provided");
+                return Ok(());
+            }
+
+            let config = Fts5Config {
+                table_name: fts_table.to_string(),
+                content_tables: vec![content_table.to_string()],
+                column_names,
+            };
+
+            match create_fts5_table_single(&config) {
+                Ok(()) => {
+                    println!("🎯 To populate the FTS5 table, run:");
+                    println!("  :fts5 populate {}", fts_table);
+                },
+                Err(e) => println!("❌ Failed to create FTS5 table: {}", e),
+            }
+        }
+        "populate" => {
+            if parts.len() < 2 {
+                println!("❌ Usage: :fts5 populate <fts_table>");
+                println!("Example: :fts5 populate docs_fts");
+                return Ok(());
+            }
+
+            let fts_table = parts[1];
+
+            match populate_fts5_content(fts_table) {
+                Ok(rows) => {
+                    println!("🔍 To search the FTS5 table, try:");
+                    println!("  :fts5 search {} 'your search query'", fts_table);
+                },
+                Err(e) => println!("❌ Failed to populate FTS5 table: {}", e),
+            }
+        }
+        "search" => {
+            if parts.len() < 3 {
+                println!("❌ Usage: :fts5 search <fts_table> <query> [limit]");
+                println!("Example: :fts5 search docs_fts 'database optimization'");
+                println!("Example: :fts5 search docs_fts 'full text search' 10");
+                return Ok(());
+            }
+
+            let fts_table = parts[1];
+            let query = parts[2];
+            let limit = parts.get(3).and_then(|s| s.parse().ok()).unwrap_or(10);
+
+            match search_fts5(fts_table, query, limit) {
+                Ok(results) => {
+                    if results.is_empty() {
+                        println!("🔍 No matches found for '{}'", query);
+                    } else {
+                        println!("🔍 Search Results for '{}':", query);
+                        println!("{:<5} {:<8} {}", "ID", "RANK", "CONTENT");
+                        println!("{:-<5} {:-<8} {:-<60}", "", "", "");
+
+                        for result in results.iter().take(10) { // Limit display to prevent overwhelming output
+                            let content_preview = if result.content.len() > 60 {
+                                format!("{}...", &result.content[..57])
+                            } else {
+                                result.content.clone()
+                            };
+                            println!("{:<5} {:.2} {}", result.rowid, result.rank, content_preview);
+                        }
+
+                        if results.len() > 10 {
+                            println!("... and {} more results", results.len() - 10);
+                        }
+                    }
+                },
+                Err(e) => println!("❌ Search failed: {}", e),
+            }
+        }
+        _ => {
+            println!("❓ Unknown command: '{}'", command);
+            println!("Available commands: help, list, create, populate, search");
+            println!("Try ':fts5 help' for detailed usage examples");
+        }
+    }
+
+    Ok(())
 }

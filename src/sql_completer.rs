@@ -388,6 +388,15 @@ impl SqlCompleter {
                 // Add keywords that match prefix including extended SQLite features
                 suggestions.extend(self.filter_keywords(SQL_KEYWORDS, prefix));
                 suggestions.extend(self.filter_keywords(SQLITE_EXTENDED_KEYWORDS, prefix));
+                // Also include functions for Keyword context (e.g., after SELECT)
+                // When no prefix, prioritize commonly used functions
+                if prefix.is_empty() {
+                    let common_functions = ["COUNT", "MAX", "MIN", "SUM", "AVG", "MATCH", "HIGHLIGHT", "SNIPPET", "BM25"];
+                    suggestions.extend(common_functions.iter().map(|s| s.to_string()));
+                    suggestions.extend(self.filter_keywords(SQL_FUNCTIONS, prefix));
+                } else {
+                    suggestions.extend(self.filter_keywords(SQL_FUNCTIONS, prefix));
+                }
             }
             CompletionContext::TableName => {
                 // Add common table-related keywords first, then table names

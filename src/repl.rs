@@ -497,23 +497,9 @@ pub fn run_repl() {
                         }
                     },
                     Some(cmd) => {
-                        // Handle subcommands like :fts5 create table_name column1,column2
-                        if cmd.starts_with("create") {
-                            println!("🔧 FTS5 table creation is coming soon!");
-                            println!("For now, use direct SQL:");
-                            println!("  CREATE VIRTUAL TABLE my_fts USING fts5(title, content);");
-                        } else if cmd.starts_with("populate") {
-                            println!("🔧 FTS5 content population is coming soon!");
-                            println!("Try searching an existing FTS5 table:");
-                            println!("  SELECT * FROM my_fts WHERE my_fts MATCH 'search term';");
-                        } else if cmd.starts_with("search") {
-                            println!("🔍 Try these FTS5 search examples:");
-                            println!("  Simple: SELECT * FROM docs_fts WHERE docs_fts MATCH 'database';");
-                            println!("  Ranked: SELECT rank FROM docs_fts WHERE docs_fts MATCH 'database' ORDER BY rank;");
-                            println!("  With highlighting: SELECT highlight(docs_fts, 0, '<b>', '</b>') FROM docs_fts WHERE docs_fts MATCH 'database';");
-                        } else {
-                            println!("❓ Unknown FTS5 command: '{}'", cmd);
-                            println!("Available :fts5 commands: help (default), list, create, populate, search");
+                        match fts5::execute_fts5_command(cmd) {
+                            Ok(_) => {},
+                            Err(e) => println!("❌ Error executing FTS5 command: {}", e),
                         }
                     }
                 }
