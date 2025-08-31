@@ -345,7 +345,6 @@ pub fn diff_schemas(schema_a: &str, schema_b: &str) -> Result<String> {
 mod tests {
     use super::*;
     use rusqlite::Connection;
-    use std::fs;
     use tempfile::NamedTempFile;
 
     fn setup_test_schema_a(conn: &Connection) -> rusqlite::Result<()> {

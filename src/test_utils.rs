@@ -258,7 +258,6 @@ pub mod integration {
     use crate::core::Result;
     use crate::db;
     use std::thread;
-    use std::sync::mpsc;
     use std::time::Duration;
 
     /// Test end-to-end operations across modules

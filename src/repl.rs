@@ -776,7 +776,6 @@ mod tests {
         storage::{HistoryEntry, Storage},
     };
     use tempfile;
-    use std::io::Write;
 
     #[test]
     fn test_parse_open_command() {

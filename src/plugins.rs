@@ -408,7 +408,7 @@ impl PluginManager {
         for plugin in &self.plugins {
             if let Some(manifest) = &plugin.manifest {
                 for capability in &manifest.capabilities {
-                    if let PluginCapability::Command { name, description, .. } = capability {
+                    if let PluginCapability::Command { name, description: _, .. } = capability {
                         commands.push((plugin.spec.name.clone(), name.clone()));
                     }
                 }
@@ -423,7 +423,7 @@ impl PluginManager {
         for plugin in &self.plugins {
             if let Some(manifest) = &plugin.manifest {
                 for capability in &manifest.capabilities {
-                    if let PluginCapability::Panel { name, description, .. } = capability {
+                    if let PluginCapability::Panel { name, description: _, .. } = capability {
                         panels.push((plugin.spec.name.clone(), name.clone()));
                     }
                 }
@@ -438,7 +438,7 @@ impl PluginManager {
         for plugin in &self.plugins {
             if let Some(manifest) = &plugin.manifest {
                 for capability in &manifest.capabilities {
-                    if let PluginCapability::Exporter { format, description, .. } = capability {
+                    if let PluginCapability::Exporter { format, description: _, .. } = capability {
                         exporters.push((plugin.spec.name.clone(), format.clone()));
                     }
                 }
@@ -453,7 +453,6 @@ mod tests {
     use super::*;
     use crate::config::PluginSpec;
     use tempfile::NamedTempFile;
-    use std::fs::File;
     use std::io::Write;
 
     #[test]

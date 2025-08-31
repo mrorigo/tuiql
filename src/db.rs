@@ -356,7 +356,6 @@ pub(crate) mod tests {
     use std::sync::{Arc, Mutex};
     use std::thread;
     use std::time::Duration;
-    use super::*;
 
     /// Isolated test database setup per test
     pub fn setup_test_db() {
