@@ -2,6 +2,7 @@ use crate::{
     db, schema_navigator, schema_map,
     storage::{HistoryEntry, Storage},
     plan, fts5, json1, sql_completer::SqlCompleter, diff,
+    results_grid::ResultsGrid,
 };
 use std::sync::mpsc;
 use dirs::data_dir;
@@ -19,11 +20,28 @@ use std::time::Instant;
 
 
 #[derive(Debug, Default)]
-struct ReplState {}
+struct ReplState {
+    /// Stores the last query result for export functionality
+    pub last_result_grid: Option<ResultsGrid>,
+}
 
 impl ReplState {
+    pub fn store_result(&mut self, result: &db::QueryResult) {
+        let mut grid = ResultsGrid::new();
+        grid.set_headers(result.columns.clone());
+        for row in &result.rows {
+            grid.add_row(row.clone());
+        }
+        self.last_result_grid = Some(grid);
+    }
+
+    pub fn get_last_result(&self) -> Option<&ResultsGrid> {
+        self.last_result_grid.as_ref()
+    }
     fn new() -> Self {
-        Self {}
+        Self {
+            last_result_grid: None,
+        }
     }
 
     fn get_prompt_prefix() -> String {
@@ -105,7 +123,7 @@ pub enum Command {
     Pragma { name: String, value: Option<String> },
     Plan,
     Fmt,
-    Export(String),
+    Export { format: String, filename: Option<String> },
     Find(String),
     Erd(Option<String>),
     Fts5(Option<String>),
@@ -173,7 +191,13 @@ pub fn parse_command(input: &str) -> Command {
         "fmt" => Command::Fmt,
         "export" => {
             if parts.len() >= 2 {
-                Command::Export(parts[1].to_string())
+                let format = parts[1].to_string();
+                let filename = if parts.len() >= 3 {
+                    Some(parts[2].to_string())
+                } else {
+                    None
+                };
+                Command::Export { format, filename }
             } else {
                 Command::Unknown(input.to_string())
             }
@@ -237,7 +261,7 @@ pub fn run_repl() {
     println!("🏗️  Welcome to the tuiql REPL! Type :quit to exit.");
     println!("Enhanced with reedline support and persistent history.\n");
 
-    let state = ReplState::new();
+    let mut state = ReplState::new();
     let command_palette = CommandPalette::new();
 
     // Initialize storage with cross-platform compatibility
@@ -357,7 +381,7 @@ pub fn run_repl() {
                 println!("  :pragma <n> [val] - ⚙️ View or set SQLite pragmas (coming soon!)");
                 println!("  :plan - Visualize the query plan");
                 println!("  :fmt - 🛠️ Format the current query buffer (coming soon!)");
-                println!("  :export <format> - 📤 Export current result set (coming soon!)");
+                println!("  :export <format> [<file>] - 📤 Export current result set (supported: csv, json, markdown)");
                 println!("  :find <text> - 🔍 Search for text in the database schema or queries (coming soon!)");
                 println!("  :erd [table] - 📊 Show ER-diagram for the schema");
                 println!("  :fts5 [cmd] - 🔍 FTS5 full-text search helper");
@@ -449,6 +473,9 @@ pub fn run_repl() {
 
                 match result {
                     Ok(result) => {
+                        // Store result in ReplState for export functionality
+                        state.store_result(&result);
+
                         // Print column headers
                         println!("{}", result.columns.join(" | "));
                         println!("{}", "-".repeat(result.columns.join(" | ").len()));
@@ -458,6 +485,7 @@ pub fn run_repl() {
                             println!("{}", row.join(" | "));
                         }
                         println!("\n({} rows)", result.row_count);
+                        println!("💡 Tip: Use ':export <format>' to export results to CSV, JSON, or Markdown");
 
                         // Record successful query in history
                         let duration = start_time.elapsed().as_millis() as i64;
@@ -507,9 +535,37 @@ pub fn run_repl() {
                 println!("🛠️  SQL Formatting is coming soon!");
                 println!("This feature will automatically format your SQL queries for better readability.");
             }
-            Command::Export(format) => {
-                println!("📤 Export functionality is coming soon!");
-                println!("This will export your query results to format: {:?}", format);
+            Command::Export { format, filename } => {
+                if let Some(grid) = state.get_last_result() {
+                    match grid.export(&format) {
+                        Ok(exported_data) => {
+                            if let Some(fname) = filename {
+                                match std::fs::write(&fname, &exported_data) {
+                                    Ok(_) => {
+                                        println!("📤 Exported results in {} format to file: {}", format.to_uppercase(), fname);
+                                        // Show file size
+                                        if let Ok(metadata) = std::fs::metadata(&fname) {
+                                            println!("   File size: {} bytes", metadata.len());
+                                        }
+                                    }
+                                    Err(e) => {
+                                        eprintln!("❌ Failed to write to file '{}': {}", fname, e);
+                                    }
+                                }
+                            } else {
+                                println!("📤 Exported results in {} format:", format.to_uppercase());
+                                println!("{}", exported_data);
+                                println!("\n💡 To export to a file, use: :export {} <filename>", format);
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("❌ Export failed: {}", e);
+                        }
+                    }
+                } else {
+                    println!("❌ No query results available for export.");
+                    println!("Run a SQL query first to generate results for export.");
+                }
             }
             Command::Find(search_term) => {
                 println!("🔍 Search functionality is coming soon!");
@@ -634,6 +690,7 @@ mod tests {
         storage::{HistoryEntry, Storage},
     };
     use tempfile;
+    use std::io::Write;
 
     #[test]
     fn test_parse_open_command() {
@@ -752,6 +809,136 @@ mod tests {
         let state = db::DB_STATE.get().unwrap().lock().unwrap();
         assert!(state.connection.is_some());
         assert_eq!(state.current_path.as_ref().unwrap(), ":memory:");
+    }
+
+    #[test]
+    fn test_repl_state_store_and_get_result() {
+        let mut state = ReplState::new();
+
+        // Initially no result stored
+        assert!(state.get_last_result().is_none());
+
+        // Create a sample query result
+        let query_result = db::QueryResult {
+            columns: vec!["id".to_string(), "name".to_string()],
+            rows: vec![
+                vec!["1".to_string(), "Alice".to_string()],
+                vec!["2".to_string(), "Bob".to_string()],
+            ],
+            row_count: 2,
+        };
+
+        // Store the result
+        state.store_result(&query_result);
+
+        // Verify result is stored and can be retrieved
+        let stored_grid = state.get_last_result().unwrap();
+        assert_eq!(stored_grid.headers, vec!["id".to_string(), "name".to_string()]);
+        assert_eq!(stored_grid.rows.len(), 2);
+        assert_eq!(stored_grid.rows[0].cells[1].content, "Alice");
+        assert_eq!(stored_grid.rows[1].cells[0].content, "2");
+    }
+
+    #[test]
+    fn test_export_command_with_results() {
+        let mut state = ReplState::new();
+
+        // Create and store a sample result
+        let query_result = db::QueryResult {
+            columns: vec!["id".to_string(), "name".to_string()],
+            rows: vec![
+                vec!["1".to_string(), "Alice".to_string()],
+                vec!["2".to_string(), "Bob".to_string()],
+            ],
+            row_count: 2,
+        };
+        state.store_result(&query_result);
+
+        // Test CSV export
+        let csv_grid = state.get_last_result().unwrap();
+        let csv_export = csv_grid.export("csv").unwrap();
+        assert!(csv_export.contains("id,name"));
+        assert!(csv_export.contains("1,Alice"));
+        assert!(csv_export.contains("2,Bob"));
+
+        // Test JSON export
+        let json_export = csv_grid.export("json").unwrap();
+        assert!(json_export.contains(r#""id":"1""#));
+        assert!(json_export.contains(r#""name":"Alice""#));
+        assert!(json_export.contains(r#""id":"2""#));
+
+        // Test Markdown export - verify table content, not exact header format
+        let md_export = csv_grid.export("markdown").unwrap();
+        assert!(md_export.contains("1 | Alice"));
+        assert!(md_export.contains("2 | Bob"));
+        assert!(md_export.contains("|")); // Contains pipe separators
+    }
+
+    #[test]
+    fn test_export_command_no_results() {
+        let state = ReplState::new();
+
+        // Test with no stored result
+        assert!(state.get_last_result().is_none());
+    }
+
+    #[test]
+    fn test_parse_export_command_with_filename() {
+        let cmd = parse_command(":export csv results.csv");
+        assert_eq!(
+            cmd,
+            Command::Export {
+                format: "csv".to_string(),
+                filename: Some("results.csv".to_string())
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_export_command_without_filename() {
+        let cmd = parse_command(":export json");
+        assert_eq!(
+            cmd,
+            Command::Export {
+                format: "json".to_string(),
+                filename: None
+            }
+        );
+    }
+
+    #[test]
+    fn test_export_to_file() -> std::io::Result<()> {
+        // Create a temporary file for testing
+        use std::io::Write;
+        let mut tmpfile = tempfile::NamedTempFile::new()?;
+        let filename = tmpfile.path().to_str().unwrap().to_string();
+
+        let mut state = ReplState::new();
+
+        // Create and store a sample result
+        let query_result = db::QueryResult {
+            columns: vec!["id".to_string(), "name".to_string()],
+            rows: vec![
+                vec!["1".to_string(), "Alice".to_string()],
+                vec!["2".to_string(), "Bob".to_string()],
+            ],
+            row_count: 2,
+        };
+        state.store_result(&query_result);
+
+        // Test file export functionality (simulate what the command handler does)
+        if let Some(grid) = state.get_last_result() {
+            let csv_export = grid.export("csv").unwrap();
+            std::fs::write(&filename, &csv_export)?;
+        }
+
+        // Verify the file was written correctly
+        let file_contents = std::fs::read_to_string(&filename)?;
+        assert!(file_contents.contains("id,name"));
+        assert!(file_contents.contains("1,Alice"));
+        assert!(file_contents.contains("2,Bob"));
+
+        Ok(())
     }
 
     #[test]

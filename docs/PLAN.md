@@ -42,7 +42,7 @@ crates/
 - [x] Transaction management (BEGIN/COMMIT/ROLLBACK)
 - [x] Query auto-completion - COMPLETED with SQL completer
 - [x] Basic record inspector - STUB IMPLEMENTED
-- [ ] Export functionality (CSV/JSON/MD)
+- [x] Export functionality (CSV/JSON/MD) - COMPLETED with REPL integration and file export support
 - [x] Basic query plan visualization - ENHANCED with tree structure
 - [x] Integration tests for query features - MAJOR IMPROVEMENT
 
