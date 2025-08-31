@@ -1,5 +1,6 @@
 // Core infrastructure modules
 pub mod core;
+pub mod config;
 
 // Feature-specific modules
 pub mod catalog;

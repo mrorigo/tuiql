@@ -1,12 +1,24 @@
 use tracing::info;
 use tracing_subscriber;
-use tuiql::{db, repl};
+use tuiql::{config, db, repl};
 
 fn main() {
     // Initialize the logging system using tracing subscriber
     tracing_subscriber::fmt::init();
 
     info!("Starting tuiql...");
+
+    // Load configuration
+    match config::load_or_create_config() {
+        Ok(cfg) => {
+            info!("Configuration loaded successfully: {:?}", cfg);
+            println!("🔧 Configuration loaded from {}", config::get_config_path().display());
+        }
+        Err(e) => {
+            eprintln!("⚠️  Warning: Failed to load configuration: {}", e);
+            eprintln!("Using default settings.");
+        }
+    }
 
     // Basic startup message
     println!("Welcome to tuiql! A blazing-fast, terminal-native SQLite client.");

@@ -1,6 +1,3 @@
-tuiql/docs/STATUS.md
-```
-
 # Project Status
 
 This document tracks the current status of the TUIQL project, including completed tasks, ongoing work, and upcoming priorities.
@@ -15,9 +12,9 @@ This document tracks the current status of the TUIQL project, including complete
 - ✅ **Reedline Professional Interface:** Complete terminal editing with Ctrl+R history search, Tab completion, persistent storage, and cross-platform compatibility
 - ✅ **FTS5 Helper Implementation:** Complete FTS5 helpers with create/populate/search commands, REPL integration, SQL completion, and comprehensive tests
 - ✅ **Database Diff Functionality:** Complete schema comparison between databases with detailed difference reporting and REPL integration
+- ✅ **Configuration System:** TOML configuration with XDG Base Directory support, automatic config creation, defaults for UI, keys, SQLite settings
 - 🎯 **Remaining M2 Features:**
   - Cancellable query support
-  - Configuration system
   - Property tests for DDL operations
 
 ### Milestone: **M1: Core Features (COMPLETED)**
@@ -81,6 +78,11 @@ This document tracks the current status of the TUIQL project, including complete
       - Implemented `:hist` command to display recent queries
       - Added automatic tracking of query execution time and success status
       - Stored history entries in SQLite database with timestamps
+  - Configuration system implementation completed:
+    - TOML configuration file loading with XDG Base Directory support
+    - Automatic creation of default configuration files
+    - Structured config for UI, keys, and SQLite settings with sensible defaults
+    - Application startup configuration loading with graceful error handling
 
 ---
 

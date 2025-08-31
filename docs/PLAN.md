@@ -51,8 +51,8 @@ crates/
 - [x] JSON1 helper implementation ✅ COMPLETED
 - [x] FTS5 helper implementation ✅ COMPLETED
 - [x] Database diff functionality ✅ COMPLETED
+- [x] Configuration system ✅ COMPLETED
 - [ ] Cancellable query support
-- [ ] Configuration system
 - [ ] Property tests for DDL operations
 
 ### M3: Polish & Extensions
