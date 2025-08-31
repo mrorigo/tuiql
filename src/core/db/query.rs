@@ -155,8 +155,7 @@ impl<'a> QueryExecutor<'a> {
             .query_map([], |row| {
                 let mut values = Vec::new();
                 for i in 0..column_count {
-                    let value_ref = row.get_ref(i)
-                        .map_err(|e| rusqlite::Error::ExecuteReturnedResults)?;
+                    let value_ref = row.get_ref(i)?;
                     values.push(format_value(value_ref));
                 }
                 Ok(values)

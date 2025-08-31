@@ -66,7 +66,6 @@ const SQL_KEYWORDS: &[&str] = &[
 
 /// SQLite functions that are commonly used
 const SQL_FUNCTIONS: &[&str] = &[
-/// JSON1 Extension Functions
     "ABS",
     "AVG",
     "COUNT",
@@ -224,7 +223,7 @@ impl SqlCompleter {
         let partial_word_re = Regex::new(r"\S+$").unwrap(); // Match any non-whitespace at the end
         let full_word_re = Regex::new(r"\b\w+\b$").unwrap(); // Match complete word at end with word boundaries
 
-        let prefix = if let Some(full_match) = full_word_re.find(before_cursor) {
+        let prefix = if let Some(_full_match) = full_word_re.find(before_cursor) {
             // We're at the end of a complete word, no partial typing - show suggestions for next context
             String::new()
         } else if let Some(partial_match) = partial_word_re.find(before_cursor) {
@@ -274,6 +273,7 @@ impl SqlCompleter {
         text.to_uppercase().contains("FROM")
     }
 
+    #[allow(dead_code)]
     fn is_in_from_clause(&self, text: &str) -> bool {
         let text_upper = text.to_uppercase();
         if let Some(from_pos) = text_upper.rfind("FROM") {
@@ -287,6 +287,7 @@ impl SqlCompleter {
         }
     }
 
+    #[allow(dead_code)]
     fn is_in_where_clause(&self, text: &str) -> bool {
         let text_upper = text.to_uppercase();
         if let Some(where_pos) = text_upper.rfind("WHERE") {
@@ -298,6 +299,7 @@ impl SqlCompleter {
         false
     }
 
+    #[allow(dead_code)]
     fn is_in_join_clause(&self, text: &str) -> bool {
         let text_upper = text.to_uppercase();
         if let Some(join_pos) = text_upper.rfind("JOIN") {
@@ -341,7 +343,6 @@ impl SqlCompleter {
 
     /// Detects if we're in FTS5 MATCH query context
     fn is_fts5_match_query(&self, text: &str) -> bool {
-        let text_upper = text.to_uppercase();
         // Check for table_name MATCH pattern
         let parts: Vec<&str> = text.split_whitespace().collect();
         let last_word = parts.last();
@@ -547,6 +548,7 @@ enum CompletionContext {
     Start,
     Keyword,
     TableName,
+    #[allow(dead_code)]
     ColumnName,
     PragmaName,
     Fts5TableCreation,    // CREATE VIRTUAL TABLE ... USING fts5

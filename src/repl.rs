@@ -43,6 +43,7 @@ impl ReplState {
         }
     }
 
+    #[allow(dead_code)]
     fn get_prompt_prefix() -> String {
         if let Ok(guard) = db::DB_STATE.get().unwrap().lock() {
             let tx_indicator = match guard.transaction_state {
@@ -614,7 +615,7 @@ pub fn run_repl() {
                 println!("🔍 Search functionality is coming soon!");
                 println!("This will search your database schema and queries for: {:?}", search_term);
             }
-            Command::Erd(table) => {
+            Command::Erd(_table) => {
                 match schema_map::generate_schema_map() {
                     Ok(schema_map) => {
                         let diagram = schema_map::render_schema_map(&schema_map);

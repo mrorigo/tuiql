@@ -106,7 +106,7 @@ impl ConnectionManager {
             PRAGMA foreign_keys = ON;
             PRAGMA journal_mode = WAL;
         ",
-        ).map_err(|e| TuiqlError::Database(rusqlite::Error::ExecuteReturnedResults))?;
+        ).map_err(|e| TuiqlError::Database(e))?;
 
         // Initialize global state if not already done
         ConnectionManager::initialize();

@@ -408,7 +408,7 @@ pub fn execute_fts5_command(command: &str) -> Result<()> {
             let fts_table = parts[1];
 
             match populate_fts5_content(fts_table) {
-                Ok(rows) => {
+                Ok(_rows) => {
                     println!("🔍 To search the FTS5 table, try:");
                     println!("  :fts5 search {} 'your search query'", fts_table);
                 },

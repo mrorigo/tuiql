@@ -107,7 +107,7 @@ pub fn create_json_flatten_query(json_expr: &str, output_columns: &Vec<String>) 
     let select_columns: Vec<String> = output_columns
         .iter()
         .enumerate()
-        .map(|(i, col)| format!("json_extract(value, '$.{}') as {}", col, col))
+        .map(|(_i, col)| format!("json_extract(value, '$.{}') as {}", col, col))
         .collect();
 
     Ok(format!(
