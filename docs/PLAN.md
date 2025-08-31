@@ -49,7 +49,7 @@ crates/
 ### M2: Advanced Features
 - [x] Schema map visualization ✅ COMPLETED
 - [x] JSON1 helper implementation ✅ COMPLETED
-- [ ] FTS5 helper implementation
+- [x] FTS5 helper implementation ✅ COMPLETED
 - [ ] Database diff functionality
 - [ ] Cancellable query support
 - [ ] Configuration system
