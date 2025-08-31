@@ -53,7 +53,7 @@ crates/
 - [x] Database diff functionality ✅ COMPLETED
 - [x] Configuration system ✅ COMPLETED
 - [x] Cancellable query support ✅ COMPLETED - Complete implementation with interrupt handling, Ctrl+C integration, and REPL support with comprehensive tests
-- [ ] Property tests for DDL operations
+- [x] Property tests for DDL operations ✅ COMPLETED - Complete implementation with round-trip testing, edge case coverage, and property-based verification
 
 ### M3: Polish & Extensions
 - [ ] Plugin system implementation

@@ -14,8 +14,7 @@ This document tracks the current status of the TUIQL project, including complete
 - ✅ **Database Diff Functionality:** Complete schema comparison between databases with detailed difference reporting and REPL integration
 - ✅ **Configuration System:** TOML configuration with XDG Base Directory support, automatic config creation, defaults for UI, keys, SQLite settings
 - ✅ **Cancellable Query Support:** Complete implementation with interrupt handling, Ctrl+C integration, and REPL support with comprehensive tests
-- ⏳ **Remaining M2 Features:**
-  - Property tests for DDL operations
+- ✅ **Property tests for DDL operations:** Complete implementation with round-trip testing, edge case coverage, and property-based verification
 
 ### Milestone: **M1: Core Features (COMPLETED)**
 - ✅ **All M1 Features:** SQL auto-completion, query plan visualization, test concurrency fixes, integration tests
