@@ -18,7 +18,7 @@ This document tracks the current status of the TUIQL project, including complete
 
 ### Milestone: **M3: Polish & Extensions (IN PROGRESS)**
 - ✅ **Plugin system implementation**: Complete plugin infrastructure with JSON-RPC communication, manifest discovery, Git-based installation, capability enumeration, REPL integration, and comprehensive test coverage
-- Plan cost overlay visualization
+- ✅ **Plan cost overlay visualization**: Enhanced query plan visualization with table row count estimation, execution time measurement, performance hints, and cost indicators
 - ✅ **Dangerous operation linting system**: Enhanced linting with sophisticated SQL parsing for DML/DDL operations, implicit JOINs, uncommitted transactions with REPL integration
 - ER diagram auto-layout refinements
 - Performance optimization
@@ -159,4 +159,5 @@ This document tracks the current status of the TUIQL project, including complete
 - **Architecture Refinement:** Improved code quality with better error handling and modular design
 - **Milestone Progress:** Project has successfully completed M1 (Core Features) and M2 (Advanced Features), now progressing M3 (Polish & Extensions)
 - **Plugin System Implementation:** Successfully implemented complete plugin infrastructure with JSON-RPC communication, manifest discovery, Git-based installation, capability enumeration, REPL integration, sample plugin with examples, and comprehensive test coverage
+- **Enhanced Plan Visualization with Cost Overlay:** Successfully implemented comprehensive query plan analysis with table row count estimation, actual query execution timing, performance hints, cost indicators, and new `:plan_enhanced` REPL command for advanced query optimization analysis
 - Regular updates will be made to this document as progress continues.
