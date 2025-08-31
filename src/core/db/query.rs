@@ -17,7 +17,6 @@ pub struct QueryResult {
     pub row_count: usize,
 }
 
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 
 /// Result handle for cancellable query execution

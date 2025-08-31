@@ -19,7 +19,7 @@ This document tracks the current status of the TUIQL project, including complete
 ### Milestone: **M3: Polish & Extensions (IN PROGRESS)**
 - Plugin system implementation (initial design and basic infrastructure)
 - Plan cost overlay visualization
-- Dangerous operation linting system
+- ✅ **Dangerous operation linting system**: Enhanced linting with sophisticated SQL parsing for DML/DDL operations, implicit JOINs, uncommitted transactions with REPL integration
 - ER diagram auto-layout refinements
 - Performance optimization
 - Cross-platform testing

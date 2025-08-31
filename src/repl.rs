@@ -8,14 +8,10 @@ use crate::{
 };
 use crate::config::load_or_create_config;
 use std::sync::mpsc;
-use dirs::data_dir;
 use reedline::{
-    Completer, History, Prompt, Span, Suggestion,
-    Reedline, Signal, FileBackedHistory,
-    HistorySessionId, HistoryItem, DefaultPrompt,
+    Completer, History, Span, Suggestion,
+    Reedline, Signal, FileBackedHistory, DefaultPrompt,
 };
-use std::borrow::Cow;
-use std::collections::VecDeque;
 use std::io::{self, Write};
 use std::sync::Arc;
 use std::path::PathBuf;

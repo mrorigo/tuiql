@@ -2,10 +2,8 @@ use crate::core::{Result, TuiqlError};
 use once_cell::sync::OnceCell;
 use rusqlite::{types::ValueRef, Connection};
 use std::collections::HashMap;
-use std::sync::{Mutex, Arc};
-use std::sync::mpsc;
+use std::sync::Mutex;
 use std::thread;
-use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct Column {
@@ -300,7 +298,7 @@ where
     F: FnOnce(rusqlite::InterruptHandle) + Send + 'static,
 {
     let state_cell = DB_STATE.get().ok_or(TuiqlError::Query("No database connection found. Please connect to a database first.".to_string()))?;
-    let mut state_guard = state_cell.lock().map_err(|_| TuiqlError::Query("Failed to acquire database lock".to_string()))?;
+    let state_guard = state_cell.lock().map_err(|_| TuiqlError::Query("Failed to acquire database lock".to_string()))?;
     let conn = state_guard.connection.as_ref().ok_or(TuiqlError::Query("No active database connection".to_string()))?;
 
     let interrupt_handle = conn.get_interrupt_handle();
