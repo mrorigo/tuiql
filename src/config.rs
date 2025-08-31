@@ -1,4 +1,4 @@
-use crate::core::{Result, TuiqlError, CommandResult};
+use crate::core::{Result, TuiqlError};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -10,6 +10,7 @@ pub struct Config {
     pub ui: UIConfig,
     pub keys: Option<KeysConfig>,
     pub sqlite: Option<SqliteConfig>,
+    pub plugins: Option<PluginsConfig>,
 }
 
 /// UI-related configuration.
@@ -34,12 +35,27 @@ pub struct SqliteConfig {
     pub page_size_hint: Option<u32>,
 }
 
+/// Plugin-related configuration.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PluginsConfig {
+    pub enabled: Vec<PluginSpec>,
+}
+
+/// Specification for a plugin.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PluginSpec {
+    pub name: String,
+    pub path: String,
+    pub description: Option<String>,
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
             ui: UIConfig::default(),
             keys: Some(KeysConfig::default()),
             sqlite: Some(SqliteConfig::default()),
+            plugins: Some(PluginsConfig::default()),
         }
     }
 }
@@ -68,6 +84,14 @@ impl Default for SqliteConfig {
         Self {
             load_extensions: None,
             page_size_hint: Some(4096),
+        }
+    }
+}
+
+impl Default for PluginsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: vec![], // No plugins by default
         }
     }
 }

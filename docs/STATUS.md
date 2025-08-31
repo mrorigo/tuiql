@@ -6,7 +6,7 @@ This document tracks the current status of the TUIQL project, including complete
 
 ## Current Status
 
-### Milestone: **M2: Advanced Features (IN PROGRESS)**
+### Milestone: **M2: Advanced Features (COMPLETED)**
 - ✅ **Schema Map Visualization:** Full ER diagram implementation with foreign key relationships and ASCII visualization
 - ✅ **JSON1 Helper Implementation:** Complete JSON1 extension helpers with query builders, validation, and REPL integration
 - ✅ **Reedline Professional Interface:** Complete terminal editing with Ctrl+R history search, Tab completion, persistent storage, and cross-platform compatibility
@@ -16,6 +16,14 @@ This document tracks the current status of the TUIQL project, including complete
 - ✅ **Cancellable Query Support:** Complete implementation with interrupt handling, Ctrl+C integration, and REPL support with comprehensive tests
 - ✅ **Property tests for DDL operations:** Complete implementation with round-trip testing, edge case coverage, and property-based verification
 
+### Milestone: **M3: Polish & Extensions (IN PROGRESS)**
+- Plugin system implementation (initial design and basic infrastructure)
+- Plan cost overlay visualization
+- Dangerous operation linting system
+- ER diagram auto-layout refinements
+- Performance optimization
+- Cross-platform testing
+- Documentation completion
 ### Milestone: **M1: Core Features (COMPLETED)**
 - ✅ **All M1 Features:** SQL auto-completion, query plan visualization, test concurrency fixes, integration tests
 - ✅ **REPL Improvements:** All commands now functional or properly marked as "coming soon"

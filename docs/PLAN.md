@@ -46,7 +46,7 @@ crates/
 - [x] Basic query plan visualization - ENHANCED with tree structure
 - [x] Integration tests for query features - MAJOR IMPROVEMENT
 
-### M2: Advanced Features
+### M2: Advanced Features ✅ COMPLETED
 - [x] Schema map visualization ✅ COMPLETED
 - [x] JSON1 helper implementation ✅ COMPLETED
 - [x] FTS5 helper implementation ✅ COMPLETED
@@ -55,7 +55,7 @@ crates/
 - [x] Cancellable query support ✅ COMPLETED - Complete implementation with interrupt handling, Ctrl+C integration, and REPL support with comprehensive tests
 - [x] Property tests for DDL operations ✅ COMPLETED - Complete implementation with round-trip testing, edge case coverage, and property-based verification
 
-### M3: Polish & Extensions
+### M3: Polish & Extensions (Current Sprint)
 - [ ] Plugin system implementation
 - [ ] Plan cost overlay visualization
 - [ ] Dangerous operation linting

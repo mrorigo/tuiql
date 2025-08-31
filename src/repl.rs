@@ -3,7 +3,9 @@ use crate::{
     storage::{HistoryEntry, Storage},
     plan, fts5, json1, sql_completer::SqlCompleter, diff,
     results_grid::ResultsGrid,
+    plugins::PluginManager,
 };
+use crate::config::load_or_create_config;
 use std::sync::mpsc;
 use dirs::data_dir;
 use reedline::{
@@ -131,6 +133,7 @@ pub enum Command {
     Hist,
     Snip(String),
     Diff { db_a: String, db_b: String },
+    Plugin { name: String, args: Vec<String> },
     Help,
     Sql(String),
     Tables,
@@ -248,6 +251,15 @@ pub fn parse_command(input: &str) -> Command {
                 Command::Unknown(input.to_string())
             }
         }
+        "plugin" => {
+            if parts.len() >= 2 {
+                let name = parts[1].to_string();
+                let args: Vec<String> = parts[2..].iter().map(|s| s.to_string()).collect();
+                Command::Plugin { name, args }
+            } else {
+                Command::Unknown(input.to_string())
+            }
+        }
         "help" => Command::Help,
         "tables" => Command::Tables,
         _ => Command::Unknown(input.to_string()),
@@ -263,6 +275,19 @@ pub fn run_repl() {
 
     let mut state = ReplState::new();
     let command_palette = CommandPalette::new();
+
+    // Load configuration for plugins
+    let config = load_or_create_config().map_err(|e| {
+        eprintln!("Failed to load configuration: {}", e);
+        e
+    }).expect("Failed to load configuration");
+
+    let mut plugin_manager = PluginManager::new();
+    if let Some(ref plugins_config) = config.plugins {
+        if let Err(e) = plugin_manager.load_plugins(&plugins_config.enabled) {
+            eprintln!("Warning: Failed to load plugins: {}", e);
+        }
+    }
 
     // Initialize storage with cross-platform compatibility
     let home_dir = std::env::var("HOME").ok()
@@ -387,6 +412,7 @@ pub fn run_repl() {
                 println!("  :fts5 [cmd] - 🔍 FTS5 full-text search helper");
                 println!("  :json1 [cmd] - 🎯 JSON1 extension helper");
                 println!("  :hist - Show command/query history");
+                println!("  :plugin <name> [args] - 🧩 Execute a configured plugin");
                 println!("  :snip <action> - 💾 Manage query snippets (coming soon!)");
                 println!("  :diff <dbA> <dbB> - 🔄 Perform a schema diff between databases (coming soon!)");
                 println!("  :tables - Show database schema information");
@@ -648,6 +674,19 @@ pub fn run_repl() {
                 println!("🔗 Database attach functionality is coming soon!");
                 println!("This will attach database '{}' at path '{}'", name, path);
             }
+            Command::Plugin { name, args } => {
+                match plugin_manager.execute_plugin(&name, &args) {
+                    Ok(output) => {
+                        println!("Plugin '{}' output:", name);
+                        println!("{}", output);
+                    }
+                    Err(e) => {
+                        println!("❌ Failed to execute plugin '{}': {}", name, e);
+                        println!("Make sure the plugin is configured in your config.toml and the executable exists.");
+                        println!("To list available plugins, check your ~/.config/tuiql/config.toml file.");
+                    }
+                }
+            }
             Command::Unknown(command_str) => {
                 println!("❓ Unknown command: '{}'", command_str);
                 println!("Type ':help' to see available commands.");
@@ -784,6 +823,30 @@ mod tests {
             Command::Diff {
                 db_a: "db1.db".to_string(),
                 db_b: "db2.db".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_plugin_command_with_args() {
+        let cmd = parse_command(":plugin myplugin arg1 arg2");
+        assert_eq!(
+            cmd,
+            Command::Plugin {
+                name: "myplugin".to_string(),
+                args: vec!["arg1".to_string(), "arg2".to_string()]
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_plugin_command_no_args() {
+        let cmd = parse_command(":plugin simple");
+        assert_eq!(
+            cmd,
+            Command::Plugin {
+                name: "simple".to_string(),
+                args: vec![]
             }
         );
     }

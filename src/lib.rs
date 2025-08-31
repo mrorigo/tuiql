@@ -11,6 +11,7 @@ pub mod fts5;
 pub mod json1;
 pub mod json_viewer;
 pub mod plan;
+pub mod plugins;
 pub mod query_editor;
 pub mod record_inspector;
 pub mod repl;
