@@ -20,7 +20,7 @@ This document tracks the current status of the TUIQL project, including complete
 - ✅ **Plugin system implementation**: Complete plugin infrastructure with JSON-RPC communication, manifest discovery, Git-based installation, capability enumeration, REPL integration, and comprehensive test coverage
 - ✅ **Plan cost overlay visualization**: Enhanced query plan visualization with table row count estimation, execution time measurement, performance hints, and cost indicators
 - ✅ **Dangerous operation linting system**: Enhanced linting with sophisticated SQL parsing for DML/DDL operations, implicit JOINs, uncommitted transactions with REPL integration
-- ER diagram auto-layout refinements
+- ✅ **ER diagram auto-layout refinements**: Enhanced schema map visualization with connectivity-based table grouping, improved organization for complex schemas, and categorized layout headers ("Highly Connected Tables" vs "Independent Tables")
 - Performance optimization
 - Cross-platform testing
 - Documentation completion

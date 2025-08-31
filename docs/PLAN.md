@@ -57,9 +57,9 @@ crates/
 
 ### M3: Polish & Extensions (Current Sprint)
 - [x] Plugin system implementation (Core infrastructure with JSON-RPC support, manifest discovery, installation, and capability enumeration)
-- [ ] Plan cost overlay visualization
+- [x] Plan cost overlay visualization
 - [x] Dangerous operation linting (Enhanced linting with sophisticated SQL parsing for DML/DDL operations, implicit JOINs, uncommitted transactions)
-- [ ] ER diagram auto-layout
+- [x] ER diagram auto-layout
 - [ ] Performance optimization
 - [ ] Cross-platform testing
 - [ ] Documentation completion
