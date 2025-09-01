@@ -1,0 +1,31 @@
+{
+    "version": "0.1.0",
+    "description": "A blazing-fast, terminal-native, keyboard-centric SQLite client",
+    "homepage": "https://github.com/tuiql/tuiql",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/tuiql/tuiql/releases/download/v0.1.0/tuiql-v0.1.0-x86_64-pc-windows-msvc.tar.gz",
+            "hash": "REPLACE_WITH_ACTUAL_SHA256_WINDOWS",
+            "extract_dir": "tuiql-v0.1.0-x86_64-pc-windows-msvc"
+        }
+    },
+    "bin": "tuiql.exe",
+    "checkver": {
+        "github": "https://github.com/tuiql/tuiql"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/tuiql/tuiql/releases/download/v$version/tuiql-v$version-x86_64-pc-windows-msvc.tar.gz",
+                "extract_dir": "tuiql-v$version-x86_64-pc-windows-msvc"
+            }
+        }
+    },
+    "notes": [
+        "TUIQL is a terminal-native SQLite client that works well in Windows Terminal.",
+        "Configuration files are stored in %APPDATA%/tuiql/",
+        "SQLite databases can be opened with: tuiql.exe <database_file>",
+        "Use Ctrl+R for command history, Tab for completion"
+    ]
+}

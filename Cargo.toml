@@ -6,10 +6,22 @@ description = "A blazing-fast, terminal-native, keyboard-centric SQLite client."
 license = "MIT"
 authors = ["Your Name <your.email@example.com>"]
 
+[profile.release]
+# Enable Link Time Optimization for better performance and smaller binary size
+lto = true
+# Reduce parallel codegen units for better optimization
+codegen-units = 1
+# Enable panic abort for smaller binaries
+panic = "abort"
+# Strip debug symbols
+strip = true
+# Optimize for size while maintaining performance
+opt-level = "z"
+
 [dependencies]
 crossterm = "0.25"
 ratatui = "0.20"
-rusqlite = { version = "0.29", features = ["bundled"] }
+rusqlite = { version = "0.29", features = ["bundled", "functions"] }
 sqlparser = "0.16"
 reedline = "0.9"
 tracing = "0.1"

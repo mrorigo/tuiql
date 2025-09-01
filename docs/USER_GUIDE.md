@@ -36,15 +36,84 @@ This guide will help you unlock the full potential of TUIQL's features for effec
 
 ### Installation
 
-TUIQL requires Rust and SQLite to be installed on your system. To install TUIQL:
+TUIQL is available through multiple installation methods for different operating systems:
+
+#### Quick Install (Recommended)
+
+**macOS (Homebrew)**
+```bash
+brew install tuiql
+```
+
+**Linux (AUR - Arch Linux)**
+```bash
+# Using yay or other AUR helper
+yay -S tuiql-bin
+
+# Or manually build from source
+yay -S tuiql
+```
+
+**Windows (Scoop)**
+```powershell
+scoop bucket add main  # if not already added
+scoop install tuiql
+```
+
+**Universal Install Script**
+
+Download and run the automated installer:
+
+```bash
+# macOS/Linux
+curl -fsSL https://raw.githubusercontent.com/tuiql/tuiql/main/install/install.sh | bash
+
+# Windows PowerShell
+irm https://raw.githubusercontent.com/tuiql/tuiql/main/install/install.ps1 -o install.ps1; .\install.ps1
+```
+
+#### Installing from Released Binaries
+
+Download the latest release from [GitHub Releases](https://github.com/tuiql/tuiql/releases):
+
+1. Download the appropriate binary for your platform
+2. Extract the archive
+3. Move the `tuiql` executable to a directory in your PATH
+
+Supported platforms:
+- **Linux**: x86_64, ARM64
+- **macOS**: x86_64, ARM64 (Apple Silicon)
+- **Windows**: x86_64
+
+#### Building from Source
+
+If you prefer to build from source or need the latest development version:
 
 1. Ensure you have Rust installed (via [rustup](https://rustup.rs/))
-2. Clone the repository
+2. Clone the repository:
+   ```bash
+   git clone https://github.com/tuiql/tuiql.git
+   cd tuiql
+   ```
 3. Build the project:
    ```bash
    cargo build --release
    ```
 4. The binary will be available at `./target/release/tuiql`
+
+#### Binary Features
+
+All TUIQL binaries include:
+- **Statically linked SQLite**: No external SQLite library dependencies
+- **Cross-platform compatibility**: Optimized for your specific platform
+- **All features included**: Complete TUIQL functionality without missing features
+- **Secure delivery**: SHA256 checksums provided for verification
+
+#### Configuration Directory
+
+TUIQL automatically creates necessary configuration directories following XDG Base Directory specifications:
+- Configuration: `~/.config/tuiql/` (Unix) or `%APPDATA%\tuiql\` (Windows)
+- Data/History: `~/.local/share/tuiql/` (Unix) or `%LOCALAPPDATA%\tuiql\` (Windows)
 
 ### First Run
 

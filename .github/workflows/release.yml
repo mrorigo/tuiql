@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build for Linux x86_64
+        run: |
+          cargo build --release
+          tar -czf tuiql-v${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz \
+            -C target/release/ tuiql
+
+      - name: Build for Linux ARM64
+        run: |
+          rustup target add aarch64-unknown-linux-gnu
+          sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+          cargo build --release --target aarch64-unknown-linux-gnu
+          tar -czf tuiql-v${{ github.ref_name }}-aarch64-unknown-linux-gnu.tar.gz \
+            -C target/aarch64-unknown-linux-gnu/release/ tuiql
+
+      - name: Upload Linux binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binaries
+          path: tuiql-v${{ github.ref_name }}-*-unknown-linux-gnu.tar.gz
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build for macOS (native)
+        run: |
+          cargo build --release
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "arm64" ]; then
+            TARGET="aarch64-apple-darwin"
+          else
+            TARGET="x86_64-apple-darwin"
+          fi
+          tar -czf tuiql-v${{ github.ref_name }}-${TARGET}.tar.gz \
+            -C target/release/ tuiql
+
+      - name: Upload macOS binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-binaries
+          path: tuiql-v${{ github.ref_name }}-*-apple-darwin.tar.gz
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build for Windows
+        run: |
+          cargo build --release
+          # Create tar.gz archive (PowerShell)
+          cd target/release
+          tar -czf ../../tuiql-v${{ github.ref_name }}-x86_64-pc-windows-msvc.tar.gz tuiql.exe
+
+      - name: Upload Windows binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binaries
+          path: tuiql-v${{ github.ref_name }}-*-pc-windows-msvc.tar.gz
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-macos, build-windows]
+    steps:
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries/
+
+      - name: Create checksums
+        run: |
+          cd binaries
+          find . -name "*.tar.gz" -exec sha256sum {} \; > ../checksums.sha256
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            binaries/linux-binaries/tuiql-v${{ github.ref_name }}-*-unknown-linux-gnu.tar.gz
+            binaries/macos-binaries/tuiql-v${{ github.ref_name }}-*-apple-darwin.tar.gz
+            binaries/windows-binaries/tuiql-v${{ github.ref_name }}-*-pc-windows-msvc.tar.gz
+            checksums.sha256
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: true
+          prerelease: contains(github.ref, 'beta') || contains(github.ref, 'rc')
+          generate_release_notes: true
