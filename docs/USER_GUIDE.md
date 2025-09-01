@@ -120,6 +120,10 @@ TUIQL provides several commands that start with a colon (`:`). Here's the comple
 
 ### Advanced Features (Available Now)
 - `:fts5 <command>` - Full-text search management and operations
+- `:export <format> [<file>]` - Export current result set to CSV, JSON, or Markdown formats
+- `:diff <dbA> <dbB>` - Compare database schemas between two databases
+- `:plugin <name> [args]` - Execute external plugin with arguments
+- `:plan_enhanced` - Advanced query plan analysis with cost overlay and performance data
 
 ### Transaction Management
 - `:begin` - Start a database transaction
@@ -130,15 +134,12 @@ TUIQL provides several commands that start with a colon (`:`). Here's the comple
 - `:ro` - Toggle read-only mode
 - `:rw` - Toggle read-write mode
 
-### Advanced/Coming Soon
-- `:attach <name> <path>` - Attach additional database (coming soon)
-- `:pragma <name> [value]` - View or set SQLite pragmas (coming soon)
-- `:fmt` - Format SQL queries (coming soon)
-- `:export <format>` - Export result sets (coming soon)
-- `:find <text>` - Search database schema (coming soon)
-- `:snip <action>` - Query snippet management (coming soon)
-- `:diff <dbA> <dbB>` - Compare database schemas (coming soon)
-- `:plugin <name> [args]` - Execute external plugin with arguments
+### Coming Soon
+- `:attach <name> <path>` - Attach additional database
+- `:pragma <name> [value]` - View or set SQLite pragmas
+- `:fmt` - Format SQL queries
+- `:find <text>` - Search database schema
+- `:snip <action>` - Query snippet management
 
 ## Working with Databases
 
@@ -342,7 +343,9 @@ If you encounter issues:
 3. Consult the project's GitHub issues
 4. Report new issues with detailed reproduction steps
 
-## Future Features (M3 Development in Progress)
+## Recent Features & M3 Progress (Mostly Complete)
+
+**Current Status**: TUIQL is in M3 (Polish & Extensions) milestone with most advanced features now fully implemented and documented.
 
 ### Recently Completed (M2 Features)
 - ✅ **Configuration System**: TOML configuration with XDG Base Directory support, automatic config creation, and application-wide settings
@@ -355,30 +358,31 @@ If you encounter issues:
 - ✅ **Reedline Professional Interface**: Full terminal editing with Ctrl+R history search, persistent storage, and advanced keyboard navigation
 - ✅ **Plugin System**: External executable plugin integration for custom functionality
 
-### Now Available (M2 Features)
-- ✅ **Cancellable Queries**: Interrupt long-running database operations
-- ✅ **Property Tests**: Comprehensive DDL validation framework
+### M3 Polish & Extensions (Most Complete)
+- ✅ **Plugin System Implementation**: Complete external executable plugin integration with JSON-RPC communication, manifest discovery, Git-based installation, and capability enumeration
+- ✅ **Enhanced Query Analysis**: Interactive query plan visualization with table row count estimation, execution time measurement, performance hints, and cost indicators
+- ✅ **Dangerous Operation Linting**: Enhanced linting with sophisticated SQL parsing for DML/DDL operations, implicit JOINs, uncommitted transactions
+- ✅ **ER Diagram Refinements**: Enhanced schema map visualization with connectivity-based table grouping and improved organization
+- ✅ **Cancellable Queries**: Complete implementation with interrupt handling, Ctrl+C integration, and REPL support
+- ✅ **Property Tests**: Comprehensive DDL validation framework with round-trip testing and edge case coverage
 
-### In Development (M3 Features)
-- **Advanced Query Editor**: Syntax highlighting, error detection, and formatting
-- **Results Grid**: Virtualized scrolling for large datasets with sticky headers
-- **Record Inspector**: Enhanced data viewing and editing capabilities
-- **Export Options**: CSV, JSON, Markdown, and XML export formats
-- **Query Snippets**: Save and manage frequently used query templates
-- **Multi-Database Support**: Attach and query across multiple databases
-- **Performance Monitoring**: Query timing and optimization suggestions
+### Remaining M3 Features
+- **Performance Optimization**: Benchmarking and optimization for large database operations
+- **Cross-Platform Testing**: Comprehensive testing across Linux, macOS, and Windows
+- **Documentation Completion**: Ensuring all features are properly documented (this update!)
 
-### Recent Achievements (Now Available)
+### Recent Achievements (M2/M3 Features Complete)
 
-🚀 **M2 Complete**: Advanced Features Milestone Achieved
-🧩 **Plugin System**: External executable integration for custom tools
-🚀 **Schema Map Visualization**: Complete ER diagram generation with foreign key analysis
-🔍 **FTS5 Full-Text Search**: Comprehensive text search with BM25 ranking and highlighting
-📊 **Advanced Query Analysis**: Interactive query plan visualization
-🎯 **Enhanced REPL**: Intelligent completions and comprehensive help system
-🚶 **Reedline Professional Interface**: Full terminal editing with Ctrl+R history search, persistent storage, and advanced keyboard navigation
-⚖️ **Property Tests**: Comprehensive DDL validation framework
-🔄 **Cancellable Queries**: Interrupt long-running database operations
+🚀 **M2 Advanced Features Milestone**: Complete with schema mapping, FTS5, JSON1 helpers, database diff, configuration system
+🎯 **M3 Polish & Extensions**: Plugin system, enhanced query analysis, operation linting, ER diagram refinements
+🧩 **Plugin System**: External executable integration with JSON-RPC communication, manifest discovery, Git-based installation
+📊 **Enhanced Query Analysis**: Plan visualization with cost overlay, table row estimation, performance hints
+⚡ **Performance Monitoring**: Real-time query execution timing and optimization suggestions
+🔒 **Safety Features**: Dangerous operation linting for DML/DDL, implicit JOIN detection, transaction guards
+🔄 **Cancellable Queries**: Complete interrupt handling with Ctrl+C integration and REPL support
+⚖️ **Property Tests**: Comprehensive DDL validation with round-trip testing and edge case coverage
+🚶 **Professional Interface**: Reedline with Ctrl+R history search, Tab completion, persistent cross-platform storage
+✅ **Documentation Updates**: Manual guide synchronized with current feature implementations
 
 ## Configuration
 

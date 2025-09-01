@@ -25,7 +25,7 @@ This document tracks the current status of the TUIQL project, including complete
 - ✅ **Golden Tests Implementation**: Complete implementation with 18 snapshot tests for ResultsGrid, JsonViewer, RecordInspector, and SchemaMap with deterministic rendering using BTreeMap for consistent field ordering
 - Performance optimization
 - Cross-platform testing
-- Documentation completion
+- ✅ **Documentation completion**: Updated USER_GUIDE.md to accurately reflect current feature status - moved export, diff, plugin features from "coming soon" to "Available", updated M3 progress descriptions, clarified remaining incomplete features
 ### Milestone: **M1: Core Features (COMPLETED)**
 - ✅ **All M1 Features:** SQL auto-completion, query plan visualization, test concurrency fixes, integration tests
 - ✅ **REPL Improvements:** All commands now functional or properly marked as "coming soon"
