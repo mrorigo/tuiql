@@ -282,52 +282,6 @@ fn fts5_table_exists(conn: &Connection, table: &str) -> Result<bool> {
     let mut stmt = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?")?;
     Ok(stmt.exists(params![table])?)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_fts5_help_format() {
-        let help = fts5_help();
-        assert!(help.contains("FTS5"));
-        assert!(help.contains("USAGE EXAMPLES"));
-        assert!(help.contains(":fts5 create"));
-        assert!(help.contains(":fts5 populate"));
-        assert!(help.contains(":fts5 search"));
-    }
-
-    #[test]
-    fn test_fts5_config_validation() {
-        // Test empty column names
-        let config = Fts5Config {
-            table_name: "test_fts".to_string(),
-            content_tables: vec!["content".to_string()],
-            column_names: vec![],
-        };
-
-        assert!(create_fts5_table_single(&config).is_err());
-
-        // Test multiple content tables (not supported for single)
-        let config = Fts5Config {
-            table_name: "test_fts".to_string(),
-            content_tables: vec!["content1".to_string(), "content2".to_string()],
-            column_names: vec!["title".to_string()],
-        };
-
-        assert!(create_fts5_table_single(&config).is_err());
-    }
-
-    #[test]
-    #[ignore = "Requires database connection for full testing"]
-    fn test_fts5_list_tables() {
-        // This test would require a database with FTS5 tables
-        // For unit testing, we just verify the function exists and handles no connection gracefully
-        let result = list_fts5_tables();
-        // Should fail gracefully without database connection
-        assert!(result.is_err() || result.unwrap().is_empty());
-    }
-}
 /// Executes FTS5 analysis and commands in the REPL
 ///
 /// # Arguments
@@ -457,4 +411,50 @@ pub fn execute_fts5_command(command: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fts5_help_format() {
+        let help = fts5_help();
+        assert!(help.contains("FTS5"));
+        assert!(help.contains("USAGE EXAMPLES"));
+        assert!(help.contains(":fts5 create"));
+        assert!(help.contains(":fts5 populate"));
+        assert!(help.contains(":fts5 search"));
+    }
+
+    #[test]
+    fn test_fts5_config_validation() {
+        // Test empty column names
+        let config = Fts5Config {
+            table_name: "test_fts".to_string(),
+            content_tables: vec!["content".to_string()],
+            column_names: vec![],
+        };
+
+        assert!(create_fts5_table_single(&config).is_err());
+
+        // Test multiple content tables (not supported for single)
+        let config = Fts5Config {
+            table_name: "test_fts".to_string(),
+            content_tables: vec!["content1".to_string(), "content2".to_string()],
+            column_names: vec!["title".to_string()],
+        };
+
+        assert!(create_fts5_table_single(&config).is_err());
+    }
+
+    #[test]
+    #[ignore = "Requires database connection for full testing"]
+    fn test_fts5_list_tables() {
+        // This test would require a database with FTS5 tables
+        // For unit testing, we just verify the function exists and handles no connection gracefully
+        let result = list_fts5_tables();
+        // Should fail gracefully without database connection
+        assert!(result.is_err() || result.unwrap().is_empty());
+    }
 }

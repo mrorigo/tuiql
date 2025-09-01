@@ -197,7 +197,6 @@ impl QueryEditor {
             .replace("FROM", "\nFROM\n")
             .replace("WHERE", "\nWHERE\n")
             .replace("=", " = ")
-            .replace(", ", ", ")
             .replace("\n ", "\n")
             .lines()
             .map(|line| line.trim_end())

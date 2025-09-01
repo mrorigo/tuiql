@@ -47,7 +47,7 @@ pub(crate) static DB_STATE: OnceCell<Mutex<DbState>> = OnceCell::new();
 
 #[cfg(test)]
 thread_local! {
-    pub static TEST_DB_STATE: std::cell::RefCell<Option<Connection>> = std::cell::RefCell::new(None);
+    pub static TEST_DB_STATE: std::cell::RefCell<Option<Connection>> = const { std::cell::RefCell::new(None) };
 }
 #[derive(Debug)]
 pub struct DbState {

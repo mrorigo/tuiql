@@ -311,7 +311,7 @@ mod tests {
         let markdown_lines: Vec<&str> = markdown.trim().lines().collect();
 
         // Define the expected markdown output
-        let expected_lines = vec!["ID | Name", "-- | ----", "1 | Alice", "2 | Bob"];
+        let expected_lines = ["ID | Name", "-- | ----", "1 | Alice", "2 | Bob"];
 
         // Assert that each line matches the expected output
         for (line, expected) in markdown_lines.iter().zip(expected_lines.iter()) {

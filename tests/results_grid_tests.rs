@@ -5,12 +5,10 @@ mod results_grid_tests {
     #[test]
     fn test_viewport_scrolling() {
         let mut viewport = Viewport::new(0, 3);
-        let rows = vec![
-            vec!["Row1".to_string()],
+        let rows = [vec!["Row1".to_string()],
             vec!["Row2".to_string()],
             vec!["Row3".to_string()],
-            vec!["Row4".to_string()],
-        ];
+            vec!["Row4".to_string()]];
 
         // Test initial visible rows
         let row_objects: Vec<Row> = rows

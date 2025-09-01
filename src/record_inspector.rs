@@ -76,18 +76,11 @@ impl RecordInspector {
     fn detect_and_load_json_fields(&mut self) {
         for (key, value) in &self.record.fields {
             // Try to parse the value as JSON, but only accept objects or arrays
-            if let Ok(json_value) = serde_json::from_str::<serde_json::Value>(value) {
-                match json_value {
-                    serde_json::Value::Object(_) | serde_json::Value::Array(_) => {
-                        // It's a JSON object or array - create a viewer
-                        let mut viewer = JsonTreeViewer::new();
-                        if viewer.load_json(value).is_ok() {
-                            self.json_viewers.insert(key.clone(), viewer);
-                        }
-                    }
-                    _ => {
-                        // Primitive values (strings, numbers, booleans, null) are displayed normally
-                    }
+            if let Ok(serde_json::Value::Object(_) | serde_json::Value::Array(_)) = serde_json::from_str::<serde_json::Value>(value) {
+                // It's a JSON object or array - create a viewer
+                let mut viewer = JsonTreeViewer::new();
+                if viewer.load_json(value).is_ok() {
+                    self.json_viewers.insert(key.clone(), viewer);
                 }
             }
         }

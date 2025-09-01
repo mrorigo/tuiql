@@ -218,10 +218,10 @@ page_size_hint = 4096
     fn test_load_config_from_str() {
         let config: Config = toml::from_str(SAMPLE_CONFIG).expect("Failed to parse sample config");
         assert_eq!(config.ui.theme.unwrap(), "dark");
-        assert_eq!(config.ui.show_status_tips.unwrap(), true);
+        assert!(config.ui.show_status_tips.unwrap());
         if let Some(keys) = config.keys {
             assert_eq!(keys.run.unwrap(), "F5");
-            assert_eq!(keys.vim_mode.unwrap(), true);
+            assert!(keys.vim_mode.unwrap());
         } else {
             panic!("Keys configuration not found");
         }
@@ -239,10 +239,10 @@ page_size_hint = 4096
     fn test_config_defaults() {
         let default_config = Config::default();
         assert_eq!(default_config.ui.theme.unwrap(), "dark");
-        assert_eq!(default_config.ui.show_status_tips.unwrap(), true);
+        assert!(default_config.ui.show_status_tips.unwrap());
         let keys = default_config.keys.unwrap();
         assert_eq!(keys.run.unwrap(), "F5");
-        assert_eq!(keys.vim_mode.unwrap(), true);
+        assert!(keys.vim_mode.unwrap());
         let sqlite = default_config.sqlite.unwrap();
         assert_eq!(sqlite.page_size_hint.unwrap(), 4096);
         assert!(sqlite.load_extensions.is_none());

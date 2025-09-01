@@ -486,7 +486,7 @@ mod tests {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            std::fs::set_permissions(&temp_file.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
+            std::fs::set_permissions(temp_file.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
         }
 
         let specs = vec![PluginSpec {
@@ -527,7 +527,7 @@ mod tests {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            std::fs::set_permissions(&temp_file.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
+            std::fs::set_permissions(temp_file.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
         }
 
         let specs = vec![PluginSpec {
@@ -538,7 +538,7 @@ mod tests {
 
         mgr.load_plugins(&specs).unwrap();
 
-        let result = mgr.execute_plugin("success_plugin", &vec![]);
+        let result = mgr.execute_plugin("success_plugin", &[]);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().trim(), "Success output");
     }
@@ -547,7 +547,7 @@ mod tests {
     fn test_execute_plugin_not_found() {
         let mgr = PluginManager::new();
 
-        let result = mgr.execute_plugin("missing_plugin", &vec![]);
+        let result = mgr.execute_plugin("missing_plugin", &[]);
         assert!(result.is_err());
     }
 
@@ -590,7 +590,7 @@ mod tests {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            std::fs::set_permissions(&temp_file.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
+            std::fs::set_permissions(temp_file.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
         }
 
         let spec = PluginSpec {

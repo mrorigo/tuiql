@@ -352,7 +352,7 @@ impl SqlCompleter {
         // Check for table_name MATCH pattern
         let parts: Vec<&str> = text.split_whitespace().collect();
         let last_word = parts.last();
-        last_word.map_or(false, |word| word.to_uppercase() == "MATCH")
+        last_word.is_some_and(|word| word.to_uppercase() == "MATCH")
     }
 
     /// Detects if we're in FTS5 function context (highlight, bm25, etc.)
@@ -601,7 +601,7 @@ mod tests {
         // Test after FROM keyword
         let suggestions = completer.complete("SELECT * FROM ", 15).unwrap();
         // Should include common keywords plus table names
-        assert!(suggestions.contains(&"SELECT".to_string()) || suggestions.len() > 0);
+        assert!(suggestions.contains(&"SELECT".to_string()) || !suggestions.is_empty());
     }
 
     #[test]
@@ -697,7 +697,7 @@ mod tests {
         let _completer = SqlCompleter::new();
 
         // Get suggestions for MATCH context
-        let suggestions = vec!["NEAR", "AND", "OR", "NOT", "PHRASE", "STAR"]; // Simulate operator suggestions
+        let suggestions = ["NEAR", "AND", "OR", "NOT", "PHRASE", "STAR"]; // Simulate operator suggestions
 
         // Verify important FTS5 operators are included
         assert!(suggestions.contains(&"NEAR"));  // Proximity search
@@ -719,10 +719,9 @@ mod tests {
         }
 
         // Basic test that completion doesn't crash with FTS5 syntax
-        assert!(true); // Test passes if no panic occurs
 
         // Test that we can get completions for general keyword context
         let suggestions = completer.complete("CREATE", 6).unwrap();
-        assert!(suggestions.len() > 0); // Should have some suggestions
+        assert!(!suggestions.is_empty()); // Should have some suggestions
     }
 }

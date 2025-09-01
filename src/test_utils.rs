@@ -11,7 +11,6 @@
 /// - Thread-safe test execution
 
 use crate::core::{Result, TuiqlError};
-use crate::db;
 use rusqlite::Connection;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -43,7 +42,7 @@ impl TestDatabaseManager {
     pub fn create_test_database(&self, name: &str) -> Result<Connection> {
         // Use in-memory database for isolation
         let conn = Connection::open_in_memory()
-            .map_err(|e| TuiqlError::Database(e))?;
+            .map_err(TuiqlError::Database)?;
 
         // Set safe defaults for testing
         conn.execute_batch(
@@ -52,7 +51,7 @@ impl TestDatabaseManager {
             PRAGMA journal_mode = MEMORY;
             PRAGMA cache_size = 1000;
         ",
-        ).map_err(|e| TuiqlError::Database(e))?;
+        ).map_err(TuiqlError::Database)?;
 
         Ok(conn)
     }
@@ -132,7 +131,7 @@ impl DatabaseFixture {
                 CREATE UNIQUE INDEX idx_categories_name ON categories (name);
             ",
             )
-            .map_err(|e| TuiqlError::Database(e))?;
+            .map_err(TuiqlError::Database)?;
 
         Ok(())
     }
@@ -150,7 +149,7 @@ impl DatabaseFixture {
             self.connection.execute(
                 "INSERT INTO users (username, email, profile_data) VALUES (?, ?, ?)",
                 [username, email, profile],
-            ).map_err(|e| TuiqlError::Database(e))?;
+            ).map_err(TuiqlError::Database)?;
         }
 
         // Insert categories
@@ -164,7 +163,7 @@ impl DatabaseFixture {
             self.connection.execute(
                 "INSERT INTO categories (name, description) VALUES (?, ?)",
                 [name, desc],
-            ).map_err(|e| TuiqlError::Database(e))?;
+            ).map_err(TuiqlError::Database)?;
         }
 
         // Insert posts
@@ -178,7 +177,7 @@ impl DatabaseFixture {
             self.connection.execute(
                 "INSERT INTO posts (user_id, title, content, published) VALUES (?, ?, ?, ?)",
                 [user_id.to_string(), title.to_string(), content.to_string(), if published { "1".to_string() } else { "0".to_string() }],
-            ).map_err(|e| TuiqlError::Database(e))?;
+            ).map_err(TuiqlError::Database)?;
         }
 
         Ok(())
@@ -187,8 +186,8 @@ impl DatabaseFixture {
 
 /// Error testing utilities specific to TuiqlError patterns
 pub mod error_testing {
-    use crate::core::TuiqlError;
-    use std::fmt::Display;
+    
+    
 
     /// Test that a function returns a specific error type
     pub fn assert_error_type<T, E>(
@@ -346,7 +345,7 @@ macro_rules! test_error_handling {
 macro_rules! assert_tuiql_error {
     ($result:expr, $expected_type:ident, $context:expr) => {
         match $result {
-            Err(crate::core::TuiqlError::$expected_type(_)) => {},
+            Err($crate::core::TuiqlError::$expected_type(_)) => {},
             Ok(_) => panic!("Expected {} error but got Ok in {}", stringify!($expected_type), $context),
             Err(other) => panic!("Expected {} but got {:?} in {}", stringify!($expected_type), other, $context),
         }

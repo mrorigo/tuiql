@@ -207,17 +207,7 @@ impl ConnectionManager {
                     guard.transaction_state = TransactionState::Transaction;
                 }
             }
-        } else if sql_upper == "COMMIT" || sql_upper == "COMMIT TRANSACTION" {
-            if self.transaction_state() != TransactionState::Transaction {
-                return Err(TuiqlError::Transaction("No transaction in progress".to_string()));
-            }
-
-            if let Some(state) = self.state {
-                if let Ok(mut guard) = state.lock() {
-                    guard.transaction_state = TransactionState::Autocommit;
-                }
-            }
-        } else if sql_upper == "ROLLBACK" || sql_upper == "ROLLBACK TRANSACTION" {
+        } else if sql_upper == "COMMIT" || sql_upper == "COMMIT TRANSACTION" || sql_upper == "ROLLBACK" || sql_upper == "ROLLBACK TRANSACTION" {
             if self.transaction_state() != TransactionState::Transaction {
                 return Err(TuiqlError::Transaction("No transaction in progress".to_string()));
             }

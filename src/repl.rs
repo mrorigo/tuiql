@@ -369,8 +369,8 @@ pub fn run_repl() {
                 }
 
                 // Handle command suggestions
-                if trimmed.starts_with(':') {
-                    let suggestions = command_palette.filter_commands(&trimmed[1..]);
+                if let Some(stripped) = trimmed.strip_prefix(':') {
+                    let suggestions = command_palette.filter_commands(stripped);
                     if !suggestions.is_empty() {
                         println!("Did you mean:");
                         for suggestion in suggestions {
@@ -1035,7 +1035,7 @@ mod tests {
     #[test]
     fn test_export_to_file() -> std::io::Result<()> {
         // Create a temporary file for testing
-        let mut tmpfile = tempfile::NamedTempFile::new()?;
+        let tmpfile = tempfile::NamedTempFile::new()?;
         let filename = tmpfile.path().to_str().unwrap().to_string();
 
         let mut state = ReplState::new();

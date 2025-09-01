@@ -12,12 +12,12 @@ mod tests {
     use rusqlite::Connection;
     use tempfile::NamedTempFile;
     use std::collections::HashSet;
-    use std::sync::{Arc, Mutex};
+    
 
     // Import our schema diff functions (and any other necessary items)
     use tuiql::diff::{compare_databases, compare_schemas, format_comparison};
-    use tuiql::core::db::schema::{Schema, Table, Column, Index, ForeignKey};
-    use tuiql::core::{Result as TuiqlResult, TuiqlError};
+    use tuiql::core::db::schema::{Schema, Table, Column};
+    
 
     // Test infrastructure
 
@@ -212,7 +212,7 @@ mod tests {
 
         let result = compare_schemas(&empty_schema, &minimal_schema).unwrap();
         assert_eq!(result.added_tables, vec!["test"]);
-        assert!(result.detailed_diffs.len() >= 1);
+        assert!(!result.detailed_diffs.is_empty());
     }
 
     /// Test that database comparison handles file system operations safely
@@ -431,7 +431,7 @@ mod tests {
             schema_a.tables.clear();
 
             // Add two tables with different names
-            let mut table1 = Table {
+            let table1 = Table {
                 name: "table1".to_string(),
                 columns: vec![Column {
                     name: "id".to_string(),
