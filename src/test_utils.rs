@@ -19,7 +19,7 @@ use std::sync::Once;
 /// Thread-safe test database manager to avoid test concurrency issues
 #[derive(Debug)]
 pub struct TestDatabaseManager {
-    databases: Mutex<HashMap<String, Arc<Mutex<Connection>>>>,
+    _databases: Mutex<HashMap<String, Arc<Mutex<Connection>>>>,
 }
 
 impl TestDatabaseManager {
@@ -31,15 +31,16 @@ impl TestDatabaseManager {
         unsafe {
             INIT.call_once(|| {
                 INSTANCE = Some(TestDatabaseManager {
-                    databases: Mutex::new(HashMap::new()),
+                    _databases: Mutex::new(HashMap::new()),
                 });
             });
+            #[allow(static_mut_refs)]
             INSTANCE.as_ref().unwrap()
         }
     }
 
     /// Create a new isolated test database with proper cleanup
-    pub fn create_test_database(&self, name: &str) -> Result<Connection> {
+    pub fn create_test_database(&self, _name: &str) -> Result<Connection> {
         // Use in-memory database for isolation
         let conn = Connection::open_in_memory()
             .map_err(TuiqlError::Database)?;
@@ -267,7 +268,7 @@ pub mod integration {
 
     /// Test concurrent query execution (thread safety)
     pub fn test_concurrent_access() -> Result<()> {
-        let handles: Vec<_> = (0..5).map(|i| {
+        let handles: Vec<_> = (0..5).map(|_i| {
             thread::spawn(move || {
                 let _ = db::execute_query("SELECT 1").unwrap();
                 thread::sleep(Duration::from_millis(10));
@@ -283,7 +284,7 @@ pub mod integration {
     }
 
     /// Run integration test with specific database setup
-    pub fn run_with_database<F, T>(setup_sql: &[&str], test_fn: F) -> Result<T>
+    pub fn run_with_database<F, T>(_setup_sql: &[&str], test_fn: F) -> Result<T>
     where
         F: FnOnce() -> Result<T>,
     {
@@ -364,7 +365,7 @@ pub mod generators {
     use rusqlite::Connection;
 
     /// Generate large dataset for performance testing
-    pub fn generate_large_dataset(conn: &mut Connection, num_rows: usize) -> String {
+    pub fn generate_large_dataset(_conn: &mut Connection, num_rows: usize) -> String {
         format!(
             "Generated dataset with {} rows",
             num_rows
@@ -372,7 +373,7 @@ pub mod generators {
     }
 
     /// Generate edge case data (NULLs, special characters, etc.)
-    pub fn generate_edge_case_dataset(conn: &mut Connection) -> String {
+    pub fn generate_edge_case_dataset(_conn: &mut Connection) -> String {
         "Generated edge case dataset".to_string()
     }
 }

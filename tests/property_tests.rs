@@ -390,7 +390,6 @@ mod tests {
         assert!(invalid_result.is_err());
     }
 
-    /// Test property-based edge cases with schema differences
     proptest! {
         /// Test that the detailed diffs count is consistent with summary information
         #[test]

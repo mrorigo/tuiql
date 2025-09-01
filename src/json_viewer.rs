@@ -1,5 +1,3 @@
-use crate::core::{Result, TuiqlError};
-
 /// JSON Tree Viewer Module for TUIQL
 ///
 /// This module provides functionality to parse and display JSON data in a structured
@@ -11,8 +9,7 @@ use crate::core::{Result, TuiqlError};
 /// - Render tree with collapsible/expandable nodes
 /// - Handle different JSON value types (objects, arrays, primitives)
 /// - Integration with TUI for keyboard navigation
-/// - Type-aware display with icons for different value types
-
+use crate::core::{Result, TuiqlError};
 
 /// Represents different types of JSON values for display purposes.
 #[derive(Debug, Clone, PartialEq)]
@@ -28,11 +25,11 @@ pub enum JsonValueType {
 /// A node in the JSON tree structure.
 #[derive(Debug, Clone)]
 pub struct JsonNode {
-    pub key: String,           // The key (for objects) or index (for arrays)
-    pub value: JsonValue,      // The actual value
+    pub key: String,             // The key (for objects) or index (for arrays)
+    pub value: JsonValue,        // The actual value
     pub children: Vec<JsonNode>, // Child nodes (empty for primitives)
-    pub expanded: bool,        // Whether this node is expanded (for collapsible nodes)
-    pub depth: usize,          // How deep in the tree this node is
+    pub expanded: bool,          // Whether this node is expanded (for collapsible nodes)
+    pub depth: usize,            // How deep in the tree this node is
 }
 
 /// The different types of values a JSON node can hold.
@@ -104,8 +101,7 @@ impl JsonTreeViewer {
 
     /// Load JSON data from a string.
     pub fn load_json(&mut self, json_str: &str) -> Result<()> {
-        let parsed: serde_json::Value = serde_json::from_str(json_str)
-            .map_err(TuiqlError::Json)?;
+        let parsed: serde_json::Value = serde_json::from_str(json_str).map_err(TuiqlError::Json)?;
 
         self.root = Some(self.build_tree_from_value("root".to_string(), parsed, 0));
         self.focused_path.clear();
@@ -113,7 +109,13 @@ impl JsonTreeViewer {
     }
 
     /// Build a tree structure from a serde_json Value.
-    fn build_tree_from_value(&self, key: String, value: serde_json::Value, depth: usize) -> JsonNode {
+    #[allow(clippy::only_used_in_recursion)]
+    fn build_tree_from_value(
+        &self,
+        key: String,
+        value: serde_json::Value,
+        depth: usize,
+    ) -> JsonNode {
         let (json_value, children) = match &value {
             serde_json::Value::Object(map) => {
                 let obj_map = map.clone();
@@ -127,7 +129,11 @@ impl JsonTreeViewer {
                 let arr_vec = arr.clone();
                 let mut child_nodes = Vec::new();
                 for (i, v) in arr_vec.iter().enumerate() {
-                    child_nodes.push(self.build_tree_from_value(i.to_string(), v.clone(), depth + 1));
+                    child_nodes.push(self.build_tree_from_value(
+                        i.to_string(),
+                        v.clone(),
+                        depth + 1,
+                    ));
                 }
                 (JsonValue::Array(arr_vec), child_nodes)
             }
@@ -164,7 +170,11 @@ impl JsonTreeViewer {
         let prefix = self.get_node_prefix(node);
 
         // Add focus indicator if this node is focused
-        let focus_marker = if path == self.focused_path.as_slice() { "▶ " } else { "  " };
+        let focus_marker = if path == self.focused_path.as_slice() {
+            "▶ "
+        } else {
+            "  "
+        };
 
         // Format the node line
         output.push_str(&format!(
@@ -189,7 +199,11 @@ impl JsonTreeViewer {
     /// Get the appropriate prefix icon for a node type.
     fn get_node_prefix(&self, node: &JsonNode) -> &'static str {
         if node.value.has_children() {
-            if node.expanded { "📂" } else { "📁" }
+            if node.expanded {
+                "📂"
+            } else {
+                "📁"
+            }
         } else {
             match node.value.value_type() {
                 JsonValueType::String => "\"",
@@ -230,7 +244,13 @@ impl JsonTreeViewer {
     }
 
     /// Recursively collect all expandable nodes.
-    fn collect_expandable_nodes(&self, node: &JsonNode, current_path: &[String], nodes: &mut Vec<Vec<String>>) {
+    #[allow(clippy::only_used_in_recursion)]
+    fn collect_expandable_nodes(
+        &self,
+        node: &JsonNode,
+        current_path: &[String],
+        nodes: &mut Vec<Vec<String>>,
+    ) {
         if node.value.has_children() {
             let mut path = current_path.to_vec();
             path.push(node.key.clone());
@@ -245,7 +265,12 @@ impl JsonTreeViewer {
     }
 
     /// Recursively find a value at the given path.
-    fn find_value_at_path<'a>(&self, node: &'a JsonNode, target_path: &[String]) -> Option<&'a JsonValue> {
+    #[allow(clippy::only_used_in_recursion)]
+    fn find_value_at_path<'a>(
+        &self,
+        node: &'a JsonNode,
+        target_path: &[String],
+    ) -> Option<&'a JsonValue> {
         if target_path.is_empty() {
             return Some(&node.value);
         }
@@ -344,7 +369,9 @@ mod tests {
         assert!(!expandable.is_empty());
 
         // Find the path to root object and toggle it
-        let root_path = expandable.into_iter().find(|path| path.len() == 1 && path[0] == "root");
+        let root_path = expandable
+            .into_iter()
+            .find(|path| path.len() == 1 && path[0] == "root");
         if let Some(path) = root_path {
             viewer.toggle_expanded(&path);
             // Note: In a real TUI implementation, we would re-render to verify the change
@@ -388,14 +415,18 @@ mod tests {
     #[test]
     fn test_render_golden_simple_object() {
         let mut viewer = JsonTreeViewer::new();
-        viewer.load_json(r#"{"name": "Alice", "age": 30, "active": true, "score": null}"#).unwrap();
+        viewer
+            .load_json(r#"{"name": "Alice", "age": 30, "active": true, "score": null}"#)
+            .unwrap();
         assert_snapshot!("json_viewer_simple_object", viewer.render());
     }
 
     #[test]
     fn test_render_golden_nested_structure() {
         let mut viewer = JsonTreeViewer::new();
-        viewer.load_json(r#"{
+        viewer
+            .load_json(
+                r#"{
             "company": {
                 "name": "TechCorp",
                 "departments": [
@@ -405,18 +436,24 @@ mod tests {
                 "location": {"city": "San Francisco", "state": "CA"}
             },
             "tags": ["startup", "tech", "innovative"]
-        }"#).unwrap();
+        }"#,
+            )
+            .unwrap();
         assert_snapshot!("json_viewer_nested_structure", viewer.render());
     }
 
     #[test]
     fn test_render_golden_array() {
         let mut viewer = JsonTreeViewer::new();
-        viewer.load_json(r#"[
+        viewer
+            .load_json(
+                r#"[
             {"id": 1, "product": "Laptop", "price": 999.99},
             {"id": 2, "product": "Mouse", "price": 29.99},
             {"id": 3, "product": "Keyboard", "price": 79.99}
-        ]"#).unwrap();
+        ]"#,
+            )
+            .unwrap();
         assert_snapshot!("json_viewer_array", viewer.render());
     }
 
@@ -429,8 +466,14 @@ mod tests {
     #[test]
     fn test_render_golden_with_focus() {
         let mut viewer = JsonTreeViewer::new();
-        viewer.load_json(r#"{"root": {"child1": "value1", "child2": {"grandchild": "value2"}}}"#).unwrap();
-        viewer.set_focus(vec!["root".to_string(), "child2".to_string(), "grandchild".to_string()]);
+        viewer
+            .load_json(r#"{"root": {"child1": "value1", "child2": {"grandchild": "value2"}}}"#)
+            .unwrap();
+        viewer.set_focus(vec![
+            "root".to_string(),
+            "child2".to_string(),
+            "grandchild".to_string(),
+        ]);
         assert_snapshot!("json_viewer_with_focus", viewer.render());
     }
 }

@@ -433,7 +433,7 @@ mod tests {
         assert!(first_group.connections > 0);
 
         // Check that connected tables are grouped together
-        let connected_names: HashSet<String> = vec!["users", "orders", "posts", "products"]
+        let _connected_names: HashSet<String> = vec!["users", "orders", "posts", "products"]
             .into_iter()
             .map(String::from)
             .collect();
