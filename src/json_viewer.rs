@@ -87,6 +87,12 @@ pub struct JsonTreeViewer {
     pub focused_path: Vec<String>, // Path to the currently focused node
 }
 
+impl Default for JsonTreeViewer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl JsonTreeViewer {
     /// Create a new empty JSON tree viewer.
     pub fn new() -> Self {
@@ -99,7 +105,7 @@ impl JsonTreeViewer {
     /// Load JSON data from a string.
     pub fn load_json(&mut self, json_str: &str) -> Result<()> {
         let parsed: serde_json::Value = serde_json::from_str(json_str)
-            .map_err(|e| TuiqlError::Json(e))?;
+            .map_err(TuiqlError::Json)?;
 
         self.root = Some(self.build_tree_from_value("root".to_string(), parsed, 0));
         self.focused_path.clear();

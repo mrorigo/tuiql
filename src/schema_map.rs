@@ -47,8 +47,8 @@ fn generate_table_groups(map: &SchemaMap) -> Vec<TableGroup> {
     let mut reverse_adjacency: HashMap<&String, Vec<&String>> = HashMap::new();
 
     for rel in &map.relationships {
-        adjacency.entry(&rel.from_table).or_insert_with(Vec::new).push(&rel.to_table);
-        reverse_adjacency.entry(&rel.to_table).or_insert_with(Vec::new).push(&rel.from_table);
+        adjacency.entry(&rel.from_table).or_default().push(&rel.to_table);
+        reverse_adjacency.entry(&rel.to_table).or_default().push(&rel.from_table);
     }
 
     // Find strongly connected components using DFS
@@ -257,12 +257,12 @@ pub fn render_schema_map(map: &SchemaMap) -> String {
                     diagram.push_str(&format!("  ↙ Referenced by {} table(s)\n", incoming_count));
                 }
 
-                diagram.push_str("\n");
+                diagram.push('\n');
             }
         }
 
         if table_groups.len() > 1 {
-            diagram.push_str("\n");
+            diagram.push('\n');
         }
     }
 

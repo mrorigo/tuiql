@@ -170,6 +170,12 @@ pub struct SqlCompleter {
     last_update: std::time::Instant,
 }
 
+impl Default for SqlCompleter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SqlCompleter {
     /// Creates a new SQL completer
     pub fn new() -> Self {
@@ -304,7 +310,7 @@ impl SqlCompleter {
         let text_upper = text.to_uppercase();
         if let Some(join_pos) = text_upper.rfind("JOIN") {
             let after_join = &text[join_pos..];
-            return after_join.to_uppercase().find("ON").is_none();
+            return !after_join.to_uppercase().contains("ON");
         }
         false
     }
@@ -314,7 +320,7 @@ impl SqlCompleter {
         let trimmed = text_upper.trim();
         if trimmed.contains("PRAGMA") {
             let parts: Vec<&str> = trimmed.split_whitespace().collect();
-            if parts.len() > 0 && parts[0] == "PRAGMA" {
+            if !parts.is_empty() && parts[0] == "PRAGMA" {
                 // After "PRAGMA" we expect a pragma name
                 return parts.len() == 1;
             }

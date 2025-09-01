@@ -1,5 +1,4 @@
 use tracing::info;
-use tracing_subscriber;
 use tuiql::{config, db, repl};
 
 fn main() {

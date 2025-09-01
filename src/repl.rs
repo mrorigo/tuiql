@@ -6,7 +6,6 @@ use crate::{
     plugins::PluginManager,
     query_editor::QueryEditor,
 };
-use crate::core::db::query::PagedQueryResult;
 use crate::config::load_or_create_config;
 use std::sync::mpsc;
 use reedline::{
@@ -23,10 +22,6 @@ use std::time::Instant;
 struct ReplState {
     /// Stores the last query result for export functionality
     pub last_result_grid: Option<ResultsGrid>,
-    /// Stores the last paged query result
-    pub last_paged_result: Option<PagedQueryResult>,
-    /// Original SQL query for the last paged result
-    pub last_paged_sql: Option<String>,
 }
 
 impl ReplState {
@@ -43,33 +38,9 @@ impl ReplState {
         self.last_result_grid.as_ref()
     }
 
-    pub fn store_paged_result(&mut self, result: &PagedQueryResult, sql: String) {
-        let mut grid = ResultsGrid::new();
-        grid.set_headers(result.columns.clone());
-        for row in &result.rows {
-            grid.add_row(row.clone());
-        }
-        self.last_result_grid = Some(grid);
-        // Create a new PagedQueryResult instead of cloning
-        self.last_paged_result = Some(PagedQueryResult {
-            columns: result.columns.clone(),
-            rows: result.rows.clone(),
-            total_count: result.total_count,
-            page_size: result.page_size,
-            current_offset: result.current_offset,
-            has_more: result.has_more,
-        });
-        self.last_paged_sql = Some(sql);
-    }
-
-    pub fn get_last_paged_result(&self) -> (Option<&PagedQueryResult>, Option<&String>) {
-        (self.last_paged_result.as_ref(), self.last_paged_sql.as_ref())
-    }
     fn new() -> Self {
         Self {
             last_result_grid: None,
-            last_paged_result: None,
-            last_paged_sql: None,
         }
     }
 
@@ -96,6 +67,12 @@ impl ReplState {
 pub struct ReedlineCompleter {
     sql_completer: SqlCompleter,
     query_buffer: String,
+}
+
+impl Default for ReedlineCompleter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ReedlineCompleter {
@@ -403,7 +380,7 @@ pub fn run_repl() {
                 }
 
                 // Parse and execute command
-                let command = parse_command(&trimmed);
+                let command = parse_command(trimmed);
                 let executing_query = executing_query_clone.clone();
                 match command {
             Command::Hist => match storage.get_recent_history(10) {
@@ -484,7 +461,7 @@ pub fn run_repl() {
                     if trimmed.eq_ignore_ascii_case("quit") || trimmed.eq_ignore_ascii_case("exit") {
                         break;
                     }
-                    match plan::explain_query(&trimmed) {
+                    match plan::explain_query(trimmed) {
                         Ok(plan_output) => println!("{}", plan_output),
                         Err(e) => eprintln!("Error generating plan: {}", e),
                     }
@@ -510,7 +487,7 @@ pub fn run_repl() {
                     }
                     println!("\nAnalyzing query execution plan with cost overlay...");
                     println!("This may take a moment as it executes the query to gather timing data.");
-                    match plan::explain_query_enhanced(&trimmed) {
+                    match plan::explain_query_enhanced(trimmed) {
                         Ok(plan_output) => println!("{}", plan_output),
                         Err(e) => eprintln!("Error generating enhanced plan: {}", e),
                     }
@@ -792,7 +769,7 @@ pub fn run_repl() {
                     }
                 }
             } else {
-                eprintln!("");
+                eprintln!();
             }
             continue;
         }

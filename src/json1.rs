@@ -97,7 +97,7 @@ pub fn create_json_tree_query(json_expr: &str, path: Option<&str>, max_depth: Op
 ///
 /// SQL query string for flattening JSON
 ///
-pub fn create_json_flatten_query(json_expr: &str, output_columns: &Vec<String>) -> Result<String> {
+pub fn create_json_flatten_query(json_expr: &str, output_columns: &[String]) -> Result<String> {
     if output_columns.is_empty() {
         return Err(TuiqlError::Query(
             "Flattening requires at least one output column specification".to_string(),
@@ -106,8 +106,7 @@ pub fn create_json_flatten_query(json_expr: &str, output_columns: &Vec<String>) 
 
     let select_columns: Vec<String> = output_columns
         .iter()
-        .enumerate()
-        .map(|(_i, col)| format!("json_extract(value, '$.{}') as {}", col, col))
+        .map(|col| format!("json_extract(value, '$.{}') as {}", col, col))
         .collect();
 
     Ok(format!(
@@ -153,7 +152,7 @@ pub fn create_json_extract_query(
         "SELECT {}, {}
 
          FROM {}",
-        "rowid, *".to_string(),
+        "rowid, *",
         select_extractions.join(", "),
         base_table
     ))
@@ -248,8 +247,7 @@ pub fn analyze_json_structure(json_expr: &str, depth_limit: usize) -> Result<Vec
 /// Formatted help text with JSON1 examples
 ///
 pub fn json1_help() -> String {
-    format!(
-        "🎯 SQLite JSON1 Extension Helper\n\n\
+    "🎯 SQLite JSON1 Extension Helper\n\n\
           JSON1 provides powerful JSON querying capabilities within SQLite.\n\
           This helper builds SQL queries and provides common patterns.\n\n\
           📝 USAGE PATTERNS:\n\
@@ -274,8 +272,7 @@ pub fn json1_help() -> String {
           Use :json1 each <table.column> [path] for array/object iteration\n\
           Use :json1 tree <table.column> [path] for tree exploration\n\
           Use :json1 flatten <column> <columns...> for tabular formatting\n\
-          Use :json1 validate <expression> for JSON validation"
-    )
+          Use :json1 validate <expression> for JSON validation".to_string()
 }
 
 /// Executes JSON analysis and displays results in the REPL
@@ -378,7 +375,7 @@ pub fn execute_json1_command(command: &str) -> Result<()> {
                         println!("📊 No JSON structure found or invalid JSON");
                     } else {
                         println!("📊 JSON Structure Analysis:");
-                        println!("{:<30} {:<10} {}", "PATH", "TYPE", "VALUE");
+                        println!("{:<30} {:<10} VALUE", "PATH", "TYPE");
                         println!("{:-<30} {:-<10} {:-<50}", "", "", "");
 
                         for result in results.iter().take(20) { // Limit for readability

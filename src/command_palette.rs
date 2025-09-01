@@ -19,6 +19,12 @@ pub struct CommandPalette {
     commands: Vec<Command>,
 }
 
+impl Default for CommandPalette {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CommandPalette {
     /// Creates a new CommandPalette with an initial list of commands.
     pub fn new() -> Self {

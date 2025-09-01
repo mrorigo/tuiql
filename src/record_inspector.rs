@@ -18,6 +18,12 @@ pub struct Record {
     pub fields: BTreeMap<String, String>,
 }
 
+impl Default for Record {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Record {
     /// Creates a new, empty record.
     pub fn new() -> Self {
@@ -42,6 +48,12 @@ impl Record {
 pub struct RecordInspector {
     pub record: Record,
     json_viewers: BTreeMap<String, JsonTreeViewer>, // JSON viewers for JSON fields
+}
+
+impl Default for RecordInspector {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl RecordInspector {

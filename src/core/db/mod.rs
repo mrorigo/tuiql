@@ -19,7 +19,6 @@
 ///
 /// Most common operations should use the higher-level functions from this module,
 /// which automatically handle connection state and error conversion.
-
 pub mod connection;
 pub mod query;
 pub mod schema;

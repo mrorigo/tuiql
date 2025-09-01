@@ -10,8 +10,10 @@ use std::sync::Mutex;
 
 /// Represents database transaction states
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Default)]
 pub enum TransactionState {
     /// No active transaction (autocommit mode)
+    #[default]
     Autocommit,
     /// Transaction in progress
     Transaction,
@@ -19,11 +21,6 @@ pub enum TransactionState {
     Failed,
 }
 
-impl Default for TransactionState {
-    fn default() -> Self {
-        TransactionState::Autocommit
-    }
-}
 
 /// Global database connection state
 ///
@@ -47,6 +44,12 @@ pub struct DbState {
 pub struct ConnectionManager {
     /// Reference to the global state (None if not initialized)
     state: Option<&'static Mutex<DbState>>,
+}
+
+impl Default for ConnectionManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ConnectionManager {
@@ -98,7 +101,7 @@ impl ConnectionManager {
     /// ```
     pub fn connect(&mut self, db_path: &str) -> Result<()> {
         let conn = Connection::open(db_path)
-            .map_err(|e| TuiqlError::Database(e))?;
+            .map_err(TuiqlError::Database)?;
 
         // Initialize connection with common pragmas
         conn.execute_batch(
@@ -106,7 +109,7 @@ impl ConnectionManager {
             PRAGMA foreign_keys = ON;
             PRAGMA journal_mode = WAL;
         ",
-        ).map_err(|e| TuiqlError::Database(e))?;
+        ).map_err(TuiqlError::Database)?;
 
         // Initialize global state if not already done
         ConnectionManager::initialize();

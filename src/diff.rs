@@ -49,9 +49,9 @@ pub struct SchemaComparison {
 /// * `Err(TuiqlError)` if either database cannot be opened or schemas cannot be introspected
 pub fn compare_databases(path_a: &str, path_b: &str) -> Result<SchemaComparison> {
     let conn_a = Connection::open(path_a)
-        .map_err(|e| TuiqlError::Database(e))?;
+        .map_err(TuiqlError::Database)?;
     let conn_b = Connection::open(path_b)
-        .map_err(|e| TuiqlError::Database(e))?;
+        .map_err(TuiqlError::Database)?;
 
     let schema_a = Schema::from_connection(&conn_a)?;
     let schema_b = Schema::from_connection(&conn_b)?;
@@ -67,7 +67,7 @@ pub fn compare_schemas(schema_a: &Schema, schema_b: &Schema) -> Result<SchemaCom
     let mut detailed_diffs = Vec::new();
 
     // Find added tables (in B but not in A)
-    for (table_name, _) in &schema_b.tables {
+    for table_name in schema_b.tables.keys() {
         if !schema_a.tables.contains_key(table_name) {
             added_tables.push(table_name.clone());
             detailed_diffs.push(SchemaDiff {
@@ -80,7 +80,7 @@ pub fn compare_schemas(schema_a: &Schema, schema_b: &Schema) -> Result<SchemaCom
     }
 
     // Find removed tables (in A but not in B)
-    for (table_name, _) in &schema_a.tables {
+    for table_name in schema_a.tables.keys() {
         if !schema_b.tables.contains_key(table_name) {
             removed_tables.push(table_name.clone());
             detailed_diffs.push(SchemaDiff {
@@ -149,7 +149,7 @@ fn compare_columns(table_name: &str, cols_a: &[Column], cols_b: &[Column]) -> Ve
     }
 
     // Find removed columns
-    for (col_name, _) in &cols_a_map {
+    for col_name in cols_a_map.keys() {
         if !cols_b_map.contains_key(col_name) {
             diffs.push(SchemaDiff {
                 diff_type: DiffType::ColumnRemoved,
@@ -210,7 +210,7 @@ fn compare_indexes(table_name: &str, indexes_a: &[Index], indexes_b: &[Index]) -
     let idx_b_map: HashMap<&str, &Index> = indexes_b.iter().map(|i| (i.name.as_str(), i)).collect();
 
     // Find added indexes
-    for (idx_name, _) in &idx_b_map {
+    for idx_name in idx_b_map.keys() {
         if !idx_a_map.contains_key(idx_name) {
             diffs.push(SchemaDiff {
                 diff_type: DiffType::IndexAdded,
@@ -222,7 +222,7 @@ fn compare_indexes(table_name: &str, indexes_a: &[Index], indexes_b: &[Index]) -
     }
 
     // Find removed indexes
-    for (idx_name, _) in &idx_a_map {
+    for idx_name in idx_a_map.keys() {
         if !idx_b_map.contains_key(idx_name) {
             diffs.push(SchemaDiff {
                 diff_type: DiffType::IndexRemoved,

@@ -62,6 +62,12 @@ pub struct ResultsGrid {
     pub viewport: Viewport,
 }
 
+impl Default for ResultsGrid {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResultsGrid {
     /// Creates a new, empty ResultsGrid.
     pub fn new() -> Self {
@@ -158,7 +164,7 @@ impl ResultsGrid {
             rows.push(row_map);
         }
         // serde_json error will automatically convert due to From trait in TuiqlError
-        serde_json::to_string(&rows).map_err(|e| TuiqlError::Json(e))
+        serde_json::to_string(&rows).map_err(TuiqlError::Json)
     }
 
     fn export_to_markdown(&self) -> Result<String> {
@@ -169,7 +175,7 @@ impl ResultsGrid {
             let underline: Vec<String> = self
                 .headers
                 .iter()
-                .map(|h| format!("{}", "-".repeat(h.len())))
+                .map(|h| "-".repeat(h.len()).to_string())
                 .collect();
             output.push_str(&underline.join(" | "));
             output.push('\n');

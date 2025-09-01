@@ -34,7 +34,6 @@ pub struct Fts5Result {
 }
 
 /// FTS5 table management functions
-
 /// Creates an FTS5 virtual table for a single content table
 ///
 /// # Arguments
@@ -88,7 +87,7 @@ pub fn create_fts5_table_single(config: &Fts5Config) -> Result<()> {
     // Build CREATE VIRTUAL TABLE statement
     let fts_columns: Vec<String> = config.column_names
         .iter()
-        .map(|col| format!("{}", col))
+        .map(|col| col.to_string())
         .collect();
 
     let sql = format!(
@@ -239,8 +238,7 @@ pub fn list_fts5_tables() -> Result<Vec<String>> {
 ///
 /// Help text with FTS5 examples
 pub fn fts5_help() -> String {
-    format!(
-        "🎯 SQLite FTS5 (Full-Text Search v5) Helper\n\n\
+    "🎯 SQLite FTS5 (Full-Text Search v5) Helper\n\n\
           FTS5 allows efficient natural language searching across your content.\n\n\
           📝 USAGE EXAMPLES:\n\
           • Create FTS5 table: :fts5 create <content_table> <fts_table> <columns>\n\
@@ -260,12 +258,10 @@ pub fn fts5_help() -> String {
           • Boolean operators: 'database OR searching'\n\
           • BM25 ranking: Built-in relevance scoring\n\n\
           💡 TIP: FTS5 tables are automatically maintained when you update content tables.\n\
-          💡 NOTE: Your content table must have an 'id' column as the primary key."
-    )
+          💡 NOTE: Your content table must have an 'id' column as the primary key.".to_string()
 }
 
 /// Internal helper functions
-
 fn get_fts5_content_table(conn: &Connection, fts_table: &str) -> Result<String> {
     // Query the FTS5 table's configuration to get the content table name
     match conn.query_row(
@@ -433,7 +429,7 @@ pub fn execute_fts5_command(command: &str) -> Result<()> {
                         println!("🔍 No matches found for '{}'", query);
                     } else {
                         println!("🔍 Search Results for '{}':", query);
-                        println!("{:<5} {:<8} {}", "ID", "RANK", "CONTENT");
+                        println!("{:<5} {:<8} CONTENT", "ID", "RANK");
                         println!("{:-<5} {:-<8} {:-<60}", "", "", "");
 
                         for result in results.iter().take(10) { // Limit display to prevent overwhelming output

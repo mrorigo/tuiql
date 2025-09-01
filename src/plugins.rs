@@ -338,7 +338,7 @@ impl PluginManager {
         std::fs::create_dir_all(&plugin_path)?;
 
         let status = std::process::Command::new("git")
-            .args(&["clone", "--depth", "1", &clone_url, &plugin_path.to_string_lossy()])
+            .args(["clone", "--depth", "1", &clone_url, &plugin_path.to_string_lossy()])
             .status()
             .map_err(|e| TuiqlError::Command(format!("Failed to clone repository: {}", e)))?;
 
@@ -445,6 +445,12 @@ impl PluginManager {
             }
         }
         exporters
+    }
+}
+
+impl Default for PluginManager {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

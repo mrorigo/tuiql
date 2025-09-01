@@ -37,6 +37,7 @@ pub struct SqliteConfig {
 
 /// Plugin-related configuration.
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Default)]
 pub struct PluginsConfig {
     pub enabled: Vec<PluginSpec>,
 }
@@ -88,13 +89,6 @@ impl Default for SqliteConfig {
     }
 }
 
-impl Default for PluginsConfig {
-    fn default() -> Self {
-        Self {
-            enabled: vec![], // No plugins by default
-        }
-    }
-}
 
 /// Loads configuration from a TOML file at the given path.
 ///

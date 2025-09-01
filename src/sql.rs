@@ -7,7 +7,6 @@ use crate::core::{Result, TuiqlError};
 /// parse SQL statements, and return structured results.
 ///
 /// For now, it returns a dummy response indicating the query has been "executed".
-
 /// Executes a SQL query string and returns a dummy result.
 ///
 /// # Arguments

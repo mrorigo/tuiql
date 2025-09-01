@@ -153,7 +153,7 @@ fn get_table_columns(conn: &Connection, table_name: &str) -> Result<Vec<Column>>
     let mut columns = Vec::new();
 
     let mut stmt = conn.prepare(&format!("PRAGMA table_info('{}')", table_name))?;
-    let column_iter = stmt.query_map([], |row| Column::from_pragma_row(row))?;
+    let column_iter = stmt.query_map([], Column::from_pragma_row)?;
 
     for column_result in column_iter {
         columns.push(column_result?);

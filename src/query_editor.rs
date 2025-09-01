@@ -123,7 +123,7 @@ impl QueryEditor {
             };
 
             // Check if there's no WHERE clause by looking for WHERE keyword
-            let words: Vec<&str> = after_keyword.trim().split_whitespace().collect();
+            let words: Vec<&str> = after_keyword.split_whitespace().collect();
 
             for (i, word) in words.iter().enumerate() {
                 if *word == "where" {

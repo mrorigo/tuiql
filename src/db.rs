@@ -34,17 +34,14 @@ pub struct Schema {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Default)]
 pub enum TransactionState {
+    #[default]
     Autocommit,
     Transaction,
     Failed,
 }
 
-impl Default for TransactionState {
-    fn default() -> Self {
-        TransactionState::Autocommit
-    }
-}
 
 pub(crate) static DB_STATE: OnceCell<Mutex<DbState>> = OnceCell::new();
 

@@ -27,7 +27,7 @@ impl PlanNode {
         let selectid = details.lines().next()
             .and_then(|line| {
                 if let Some(colon_pos) = line.find(':') {
-                    let after_colon = &line[colon_pos + 1..].trim().chars().take_while(|c| c.is_digit(10)).collect::<String>();
+                    let after_colon = &line[colon_pos + 1..].trim().chars().take_while(|c| c.is_ascii_digit()).collect::<String>();
                     after_colon.parse::<i32>().ok()
                 } else {
                     None
@@ -150,8 +150,8 @@ pub fn get_table_row_counts(plan: &str) -> Result<std::collections::HashMap<Stri
         // Try using COUNT(*) for accurate counts, might be expensive for large tables
         match db::execute_query(&format!("SELECT COUNT(*) as count FROM {}", table_name)) {
             Ok(result) => {
-                if let Some(row) = result.rows.get(0) {
-                    if let Some(count_str) = row.get(0) {
+                if let Some(row) = result.rows.first() {
+                    if let Some(count_str) = row.first() {
                         if let Ok(count) = count_str.parse::<i64>() {
                             row_counts.insert(table_name, count);
                         }
@@ -160,20 +160,17 @@ pub fn get_table_row_counts(plan: &str) -> Result<std::collections::HashMap<Stri
             }
             Err(_) => {
                 // If count query fails, try to estimate from sqlite_stat1
-                match db::execute_query(&format!("SELECT stat FROM sqlite_stat1 WHERE tbl = '{}' LIMIT 1", table_name)) {
-                    Ok(result) => {
-                        if let Some(row) = result.rows.get(0) {
-                            if let Some(stat_str) = row.get(0) {
-                                // Parse stat1 format: e.g., "12345 1 1" → take first number as approximate count
-                                if let Some(count_part) = stat_str.split_whitespace().next() {
-                                    if let Ok(count) = count_part.parse::<i64>() {
-                                        row_counts.insert(table_name, count);
-                                    }
+                if let Ok(result) = db::execute_query(&format!("SELECT stat FROM sqlite_stat1 WHERE tbl = '{}' LIMIT 1", table_name)) {
+                    if let Some(row) = result.rows.first() {
+                        if let Some(stat_str) = row.first() {
+                            // Parse stat1 format: e.g., "12345 1 1" → take first number as approximate count
+                            if let Some(count_part) = stat_str.split_whitespace().next() {
+                                if let Ok(count) = count_part.parse::<i64>() {
+                                    row_counts.insert(table_name, count);
                                 }
                             }
                         }
-                    },
-                    Err(_) => {} // Table doesn't exist or no statistics available
+                    }
                 }
             }
         };
@@ -206,15 +203,15 @@ pub fn render_plan_with_cost_overlay(plan: &str) -> Result<String> {
             if *count > 100000 {
                 visualization.push_str(" ⚠️ Consider indexing");
             }
-            visualization.push_str("\n");
+            visualization.push('\n');
         }
-        visualization.push_str("\n");
+        visualization.push('\n');
     }
 
     // Group nodes by selectid for compound queries
     let mut nodes_by_select: std::collections::HashMap<i32, Vec<&PlanNode>> = std::collections::HashMap::new();
     for node in &tree_nodes {
-        nodes_by_select.entry(node.selectid).or_insert_with(Vec::new).push(node);
+        nodes_by_select.entry(node.selectid).or_default().push(node);
     }
 
     for (selectid, nodes) in nodes_by_select {
@@ -261,7 +258,7 @@ pub fn render_plan_with_cost_overlay(plan: &str) -> Result<String> {
         }
 
         if selectid >= 0 {
-            visualization.push_str("\n");
+            visualization.push('\n');
         }
     }
 
@@ -305,7 +302,7 @@ pub fn render_plan(plan: &str) -> Result<String> {
     // Group nodes by selectid for compound queries
     let mut nodes_by_select: std::collections::HashMap<i32, Vec<&PlanNode>> = std::collections::HashMap::new();
     for node in &tree_nodes {
-        nodes_by_select.entry(node.selectid).or_insert_with(Vec::new).push(node);
+        nodes_by_select.entry(node.selectid).or_default().push(node);
     }
 
     for (selectid, nodes) in nodes_by_select {
@@ -328,7 +325,7 @@ pub fn render_plan(plan: &str) -> Result<String> {
         }
 
         if selectid >= 0 {
-            visualization.push_str("\n");
+            visualization.push('\n');
         }
     }
 
@@ -351,7 +348,7 @@ pub fn render_plan_with_timing(plan: &str, execution_time_ms: u128) -> Result<St
     // Group nodes by selectid for compound queries
     let mut nodes_by_select: std::collections::HashMap<i32, Vec<&PlanNode>> = std::collections::HashMap::new();
     for node in &tree_nodes {
-        nodes_by_select.entry(node.selectid).or_insert_with(Vec::new).push(node);
+        nodes_by_select.entry(node.selectid).or_default().push(node);
     }
 
     for (selectid, nodes) in nodes_by_select {
@@ -372,7 +369,7 @@ pub fn render_plan_with_timing(plan: &str, execution_time_ms: u128) -> Result<St
         }
 
         if selectid >= 0 {
-            visualization.push_str("\n");
+            visualization.push('\n');
         }
     }
 

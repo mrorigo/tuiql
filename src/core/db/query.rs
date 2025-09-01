@@ -324,7 +324,7 @@ impl<'a> QueryExecutor<'a> {
             sql.to_string()
         };
 
-        let mut executor = QueryExecutor::new(self.connection);
+        let executor = QueryExecutor::new(self.connection);
         let result = executor.execute(&original_sql)?;
 
         // Also get total count for progress indication
