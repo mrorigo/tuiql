@@ -5,6 +5,47 @@
 
 use crate::core::{Result, TuiqlError};
 use rusqlite::{types::ValueRef, Connection};
+use std::sync::mpsc;
+use std::thread;
+
+/// Represents a chunk of streaming query results
+#[derive(Debug, Clone)]
+pub struct StreamingChunk {
+    /// Row data for this chunk
+    pub rows: Vec<Vec<String>>,
+    /// Total rows processed so far (for progress indication)
+    pub total_rows_processed: usize,
+    /// Whether this is the final chunk
+    pub is_final: bool,
+}
+
+/// Handle for managing streaming query execution
+#[derive(Debug)]
+pub struct StreamingQueryHandle {
+    /// Column names from the query result
+    pub columns: Vec<String>,
+    /// Handle to the streaming thread
+    streaming_thread: Option<thread::JoinHandle<()>>,
+}
+
+impl StreamingQueryHandle {
+    /// Creates a new StreamingQueryHandle
+    pub fn new(columns: Vec<String>, streaming_thread: thread::JoinHandle<()>) -> Self {
+        StreamingQueryHandle {
+            columns,
+            streaming_thread: Some(streaming_thread),
+        }
+    }
+
+    /// Waits for the streaming thread to complete
+    pub fn join(self) -> thread::Result<()> {
+        if let Some(thread) = self.streaming_thread {
+            thread.join()
+        } else {
+            Ok(())
+        }
+    }
+}
 
 /// Represents the result of a SQL query execution
 #[derive(Debug)]
@@ -17,9 +58,48 @@ pub struct QueryResult {
     pub row_count: usize,
 }
 
-use std::sync::mpsc;
+/// Represents the result of a paged SQL query execution for progressive loading
+#[derive(Debug)]
+pub struct PagedQueryResult {
+    /// Column names from the query result
+    pub columns: Vec<String>,
+    /// Rows of data for this page as string values
+    pub rows: Vec<Vec<String>>,
+    /// Total number of rows in the complete result set
+    pub total_count: usize,
+    /// Maximum number of rows per page
+    pub page_size: usize,
+    /// Current offset into the result set
+    pub current_offset: usize,
+    /// Whether there are more pages available
+    pub has_more: bool,
+}
 
-/// Result handle for cancellable query execution
+impl PagedQueryResult {
+    /// Creates a new PagedQueryResult
+    pub fn new(columns: Vec<String>, rows: Vec<Vec<String>>, total_count: usize, page_size: usize, current_offset: usize) -> Self {
+        let row_count = rows.len();
+        PagedQueryResult {
+            columns,
+            rows,
+            total_count,
+            page_size,
+            current_offset,
+            has_more: current_offset + row_count < total_count,
+        }
+    }
+
+    /// Returns the next page of results
+    pub fn next_page(&self) -> Option<(usize, usize)> {
+        if self.has_more {
+            Some((self.page_size, self.current_offset + self.rows.len()))
+        } else {
+            None
+        }
+    }
+}
+
+///// Result handle for cancellable query execution
 pub struct CancellableQueryHandle {
     /// Channel for receiving the result
     result_receiver: mpsc::Receiver<Result<QueryResult>>,
@@ -211,6 +291,70 @@ impl<'a> QueryExecutor<'a> {
         self.execute(sql)
     }
 
+    /// Executes a SQL query in paged mode to support large result sets without memory exhaustion.
+    ///
+    /// This method processes rows in batches, keeping memory usage bounded while allowing
+    /// progressive result display. It returns the first batch of results immediately and
+    /// provides pagination handles for retrieving subsequent batches.
+    ///
+    /// # Arguments
+    ///
+    /// * `sql` - The SQL query to execute
+    /// * `page_size` - Maximum number of rows to return per page
+    /// * `offset` - Number of rows to skip (supports manual pagination)
+    ///
+    /// # Returns
+    ///
+    /// Returns a paginated result allowing progressive loading of large datasets.
+    ///
+    /// # Errors
+    ///
+    /// Returns `TuiqlError::Query` if the query fails.
+    pub fn execute_paged(&self, sql: &str, page_size: usize, offset: usize) -> Result<PagedQueryResult> {
+        let original_sql = if sql.to_uppercase().trim_start().starts_with("SELECT") {
+            if sql.to_uppercase().contains(" LIMIT ") {
+                // If LIMIT is already present, modify it
+                let limit_idx = sql.to_uppercase().find(" LIMIT ").unwrap();
+                format!("{} LIMIT {} OFFSET {}", &sql[0..limit_idx], page_size, offset)
+            } else {
+                // Add LIMIT and OFFSET
+                format!("{} LIMIT {} OFFSET {}", sql, page_size, offset)
+            }
+        } else {
+            sql.to_string()
+        };
+
+        let mut executor = QueryExecutor::new(self.connection);
+        let result = executor.execute(&original_sql)?;
+
+        // Also get total count for progress indication
+        let count_sql = if sql.to_uppercase().trim_start().starts_with("SELECT") {
+            format!("SELECT COUNT(*) FROM ({}) AS count_query", sql)
+        } else {
+            "SELECT 0".to_string()
+        };
+
+        let total_count = if let Ok(count_result) = executor.execute(&count_sql) {
+            if !count_result.rows.is_empty() && !count_result.rows[0].is_empty() {
+                count_result.rows[0][0].parse::<usize>().unwrap_or(0)
+            } else {
+                0
+            }
+        } else {
+            0
+        };
+
+        let row_count = result.rows.len();
+        Ok(PagedQueryResult {
+            columns: result.columns,
+            rows: result.rows,
+            total_count,
+            page_size,
+            current_offset: offset,
+            has_more: row_count >= page_size,
+        })
+    }
+
     /// Prepares a SQL statement for execution without running it
     ///
     /// # Arguments
@@ -243,6 +387,23 @@ impl<'a> QueryExecutor<'a> {
 pub fn execute_query_on_connection(conn: &Connection, sql: &str) -> Result<QueryResult> {
     let executor = QueryExecutor::new(conn);
     executor.execute(sql)
+}
+
+/// Convenience function to execute a paged query on a connection
+///
+/// # Arguments
+///
+/// * `conn` - Database connection to execute the query on
+/// * `sql` - SQL query to execute
+/// * `page_size` - Maximum number of rows to return
+/// * `offset` - Number of rows to skip
+///
+/// # Returns
+///
+/// Returns paginated query results formatted as a `PagedQueryResult`.
+pub fn execute_paged_query_on_connection(conn: &Connection, sql: &str, page_size: usize, offset: usize) -> Result<PagedQueryResult> {
+    let executor = QueryExecutor::new(conn);
+    executor.execute_paged(sql, page_size, offset)
 }
 
 /// Formats a SQLite value for display

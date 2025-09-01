@@ -6,6 +6,7 @@ use crate::{
     plugins::PluginManager,
     query_editor::QueryEditor,
 };
+use crate::core::db::query::PagedQueryResult;
 use crate::config::load_or_create_config;
 use std::sync::mpsc;
 use reedline::{
@@ -22,6 +23,10 @@ use std::time::Instant;
 struct ReplState {
     /// Stores the last query result for export functionality
     pub last_result_grid: Option<ResultsGrid>,
+    /// Stores the last paged query result
+    pub last_paged_result: Option<PagedQueryResult>,
+    /// Original SQL query for the last paged result
+    pub last_paged_sql: Option<String>,
 }
 
 impl ReplState {
@@ -37,9 +42,34 @@ impl ReplState {
     pub fn get_last_result(&self) -> Option<&ResultsGrid> {
         self.last_result_grid.as_ref()
     }
+
+    pub fn store_paged_result(&mut self, result: &PagedQueryResult, sql: String) {
+        let mut grid = ResultsGrid::new();
+        grid.set_headers(result.columns.clone());
+        for row in &result.rows {
+            grid.add_row(row.clone());
+        }
+        self.last_result_grid = Some(grid);
+        // Create a new PagedQueryResult instead of cloning
+        self.last_paged_result = Some(PagedQueryResult {
+            columns: result.columns.clone(),
+            rows: result.rows.clone(),
+            total_count: result.total_count,
+            page_size: result.page_size,
+            current_offset: result.current_offset,
+            has_more: result.has_more,
+        });
+        self.last_paged_sql = Some(sql);
+    }
+
+    pub fn get_last_paged_result(&self) -> (Option<&PagedQueryResult>, Option<&String>) {
+        (self.last_paged_result.as_ref(), self.last_paged_sql.as_ref())
+    }
     fn new() -> Self {
         Self {
             last_result_grid: None,
+            last_paged_result: None,
+            last_paged_sql: None,
         }
     }
 
@@ -133,6 +163,7 @@ pub enum Command {
     Snip(String),
     Diff { db_a: String, db_b: String },
     Plugin { name: String, args: Vec<String> },
+    NextPage,
     Help,
     Sql(String),
     Tables,
@@ -262,6 +293,7 @@ pub fn parse_command(input: &str) -> Command {
         }
         "help" => Command::Help,
         "tables" => Command::Tables,
+        "nextpage" => Command::NextPage,
         _ => Command::Unknown(input.to_string()),
     }
 }
@@ -554,10 +586,14 @@ pub fn run_repl() {
                         println!("{}", "-".repeat(result.columns.join(" | ").len()));
 
                         // Print rows
+                        let displayed_rows = result.rows.len();
                         for row in result.rows {
                             println!("{}", row.join(" | "));
                         }
-                        println!("\n({} rows)", result.row_count);
+                        println!("\n({} rows displayed)", displayed_rows);
+                        if result.row_count > displayed_rows {
+                            println!("⚡ Query returned more results. Use paged execution for large datasets.");
+                        }
                         println!("💡 Tip: Use ':export <format>' to export results to CSV, JSON, or Markdown");
 
                         // Record successful query in history
@@ -574,7 +610,7 @@ pub fn run_repl() {
                                 .unwrap_or_else(|| "main".to_string()),
                             true,
                             Some(duration),
-                            Some(result.row_count as i64),
+                            Some(displayed_rows as i64),
                         );
                         if let Err(e) = storage.add_history(entry) {
                             eprintln!("Failed to save to history: {}", e);
@@ -733,6 +769,10 @@ pub fn run_repl() {
                         println!("To list available plugins, check your ~/.config/tuiql/config.toml file.");
                     }
                 }
+            }
+            Command::NextPage => {
+                println!("🔄 NextPage functionality is coming soon!");
+                println!("This will show the next page of results in paged queries.");
             }
             Command::Unknown(command_str) => {
                 println!("❓ Unknown command: '{}'", command_str);
@@ -1018,7 +1058,6 @@ mod tests {
     #[test]
     fn test_export_to_file() -> std::io::Result<()> {
         // Create a temporary file for testing
-        use std::io::Write;
         let mut tmpfile = tempfile::NamedTempFile::new()?;
         let filename = tmpfile.path().to_str().unwrap().to_string();
 

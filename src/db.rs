@@ -651,7 +651,7 @@ pub(crate) mod tests {
         let interrupt_called = Arc::new(Mutex::new(false));
         let interrupt_called_clone = interrupt_called.clone();
 
-        let result = execute_cancellable_query(sql, move |interrupt_handle| {
+        let result = execute_cancellable_query(sql, move |_interrupt_handle| {
             // Callback that doesn't actually interrupt, just sets a flag
             std::thread::spawn(move || {
                 // Simulate some work that could be cancelled

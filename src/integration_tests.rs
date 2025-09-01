@@ -15,6 +15,87 @@ mod tests {
     use crate::test_utils::*;
     use crate::{sql_completer, plan, db};
     use rusqlite::Connection;
+    use std::time::{Duration, Instant};
+
+    /// Diagnostic test for performance bottlenecks
+    #[test]
+    fn test_performance_bottleneck_diagnostics() {
+        // Create a larger dataset to test performance issues
+        let fixture = DatabaseFixture::new("bottleneck_test").unwrap();
+
+        // Create test table with data - simulate large dataset
+        println!("🔧 Setting up performance test data...");
+        fixture.connection.execute_batch("
+            CREATE TABLE performance_test (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                category TEXT,
+                value REAL,
+                data TEXT
+            );
+
+            -- Generate a sizeable dataset (10k rows)
+            WITH RECURSIVE
+              counter(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM counter WHERE x < 10000)
+            INSERT INTO performance_test (name, category, value, data)
+            SELECT
+                'Test Item ' || x,
+                CASE (x % 10)
+                    WHEN 0 THEN 'alpha'
+                    WHEN 1 THEN 'beta'
+                    WHEN 2 THEN 'gamma'
+                    WHEN 3 THEN 'delta'
+                    WHEN 4 THEN 'epsilon'
+                    WHEN 5 THEN 'zeta'
+                    WHEN 6 THEN 'eta'
+                    WHEN 7 THEN 'theta'
+                    WHEN 8 THEN 'iota'
+                    ELSE 'kappa'
+                END,
+                x * 3.14159,
+                'Large data blob for row ' || x || ' with enough text to create memory pressure and verify the collect() operation issue'
+            FROM counter;
+        ").unwrap();
+
+        // Test 1: Time-to-first-result for large dataset (should fail performance targets)
+        println!("\n📊 Testing time-to-first-result for 10k rows...");
+        let (large_result, large_duration) = performance::measure_execution(|| {
+            db::execute_query("SELECT * FROM performance_test LIMIT 10000")
+        });
+
+        println!("⚠️  Large query duration: {}ms", large_duration.as_millis());
+        println!("⚠️  Result row count: {}", large_result.as_ref().unwrap().row_count);
+        println!("⚠️  Memory usage: ~{:.2}MB for {} rows of data",
+                (large_result.as_ref().unwrap().rows.len() as f64 *
+                 large_result.as_ref().unwrap().columns.len() as f64 *
+                 32.0 / 1024.0 / 1024.0),
+                large_result.as_ref().unwrap().rows.len()
+        );
+
+        // Test 2: Small query performance (should meet requirements)
+        println!("\n📊 Testing small query performance...");
+        let (small_result, small_duration) = performance::measure_execution(|| {
+            db::execute_query("SELECT id, name FROM performance_test LIMIT 10")
+        });
+
+        println!("✅ Small query duration: {}ms", small_duration.as_millis());
+        println!("✅ Result row count: {}", small_result.as_ref().unwrap().row_count);
+
+        // Performance assertions based on PRD requirements
+        // <2s time-to-first-result on commodity laptops
+        assert!(large_duration.as_millis() < 2000, "Large query should complete in <2s (took {}ms)", large_duration.as_millis());
+        assert!(small_duration.as_millis() < 100, "Small query should complete in <100ms (took {}ms)", small_duration.as_millis());
+
+        // Fail the test to document current performance issues
+        panic!("\n❌ PERFORMANCE BOTTLENECK DETECTED:
+               Large query loaded {} rows into memory ({:.2}MB) in {}ms
+               This violates PRD requirement of virtualized scrolling and <2s time-to-first-result
+               Current implementation loads ALL data with .collect() instead of streaming",
+               large_result.unwrap().row_count,
+               (large_result.as_ref().unwrap().rows.len() as f64 * large_result.as_ref().unwrap().columns.len() as f64 * 32.0 / 1024.0 / 1024.0),
+               large_duration.as_millis()
+        );
+    }
 
     /// Integration test for SQL auto-completion system
     #[test]

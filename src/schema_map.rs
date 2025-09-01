@@ -1,6 +1,6 @@
 use crate::core::{Result, TuiqlError};
 use crate::db;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 /*
  * Schema Map Module for ER-like Diagram Visualization

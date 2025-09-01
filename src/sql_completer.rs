@@ -688,7 +688,7 @@ mod tests {
 
     #[test]
     fn test_fts5_operators_in_match() {
-        let completer = SqlCompleter::new();
+        let _completer = SqlCompleter::new();
 
         // Get suggestions for MATCH context
         let suggestions = vec!["NEAR", "AND", "OR", "NOT", "PHRASE", "STAR"]; // Simulate operator suggestions
@@ -705,11 +705,11 @@ mod tests {
         let mut completer = SqlCompleter::new();
 
         // Test tokenizer suggestions (would need tokenizer context detection)
-        let mut suggestions = Vec::new();
+        let mut _suggestions = Vec::new();
 
         // Add tokenizer test to ensure the tokenizer constants exist
         if let Ok(all_suggestions) = completer.complete("CREATE VIRTUAL TABLE docs USING fts5(", 45) {
-            suggestions = all_suggestions;
+            _suggestions = all_suggestions;
         }
 
         // Basic test that completion doesn't crash with FTS5 syntax
